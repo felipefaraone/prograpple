@@ -19,7 +19,7 @@ export default [
   },
   {
     // Config and tooling files run in Node.
-    files: ['*.config.js', 'eslint.config.js'],
+    files: ['*.config.js', 'eslint.config.js', 'tests/**/*.js'],
     languageOptions: {
       globals: {
         ...globals.node,

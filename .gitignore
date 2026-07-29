@@ -1,0 +1,14 @@
+.DS_Store
+node_modules
+dist
+dist-ssr
+
+# Secrets — never commit. Only .env.example ships.
+.env
+.env.*
+!.env.example
+
+# Logs / editor
+*.log
+.vscode/*
+!.vscode/extensions.json

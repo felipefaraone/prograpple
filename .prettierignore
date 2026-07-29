@@ -1,0 +1,13 @@
+# Build + deps
+dist
+node_modules
+
+# Not ours to reformat — authoritative docs and the inherited prototype.
+docs
+CLAUDE.md
+Prototype
+
+# Binary / generated
+*.png
+*.docx
+package-lock.json

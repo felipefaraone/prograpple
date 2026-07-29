@@ -1,0 +1,79 @@
+/*
+ * Design tokens — the ONE place raw hex/values live (CONVENTIONS §11: no
+ * hardcoded hex anywhere else). Colours, shadows, radii and fonts are extracted
+ * verbatim from Prototype/index.html; the spacing and type scales are distilled
+ * from the prototype's inline values into a small, consistent scale.
+ */
+:root {
+  /* Surfaces */
+  --bg: #f4f4f6;
+  --panel: #ffffff;
+  --panel-2: #f0f0f3;
+  --panel-3: #e8e8ed;
+  --line: #e7e7ec;
+  --line-2: #d6d6dd;
+
+  /* Text */
+  --text: #17181c;
+  --text-dim: #5c626e;
+  --text-faint: #8f95a1;
+
+  /* Accent */
+  --accent: #e07c00;
+  --accent-soft: #fdf2e2;
+  --accent-dim: #f0c48a;
+  --accent-deep: #a35a00;
+
+  /* Sides (subject / opponent) */
+  --us: #1470e0;
+  --us-soft: #e9f2fd;
+  --them: #d63652;
+  --them-soft: #fdeef1;
+
+  /* Semantic — reuse the accent/side ramps rather than new hex */
+  --danger: var(--them);
+  --danger-soft: var(--them-soft);
+
+  /* Shadows */
+  --shadow-sm:
+    0 1px 1px rgba(20, 22, 28, 0.04), 0 1px 3px rgba(20, 22, 28, 0.06);
+  --shadow-md:
+    0 1px 2px rgba(20, 22, 28, 0.05), 0 6px 18px rgba(20, 22, 28, 0.08);
+  --shadow-lg:
+    0 4px 10px rgba(20, 22, 28, 0.06), 0 20px 50px rgba(20, 22, 28, 0.16);
+
+  /* Radii */
+  --r-sm: 5px;
+  --r: 9px;
+  --r-lg: 14px;
+  --r-pill: 99px;
+
+  /* Type */
+  --font-d:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+  --font-b:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+  --font-m: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 17px;
+  --text-xl: 22px;
+  --text-2xl: 26px;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}

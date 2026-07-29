@@ -24,9 +24,10 @@ jobs:
       - name: Build
         run: npm run build
 
-  isolation:
-    # Tenant isolation test (ARCHITECTURE §7.4). Runs against a hermetic local
-    # Supabase stack, so it needs no secrets. A failure here blocks the workflow.
+  tests:
+    # Tenant isolation (ARCHITECTURE §7.4) + critical-flow smoke (CONVENTIONS §13).
+    # Both run against a hermetic local Supabase stack, so they need no secrets.
+    # A failure here blocks the workflow.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,16 +47,24 @@ jobs:
       - name: Start Supabase (applies migrations)
         run: supabase start
 
-      - name: Run isolation test as an anon-key authenticated user
+      - name: Export Supabase env for the tests
         run: |
           # Map `supabase status` output (API_URL, ANON_KEY, ...) to the names the
-          # test reads. psql is preinstalled on ubuntu-latest for catalog checks.
+          # tests read, and share them with later steps. psql is preinstalled on
+          # ubuntu-latest for the isolation test's catalog checks.
           eval "$(supabase status -o env | sed 's/^/export /')"
-          export SUPABASE_URL="$API_URL"
-          export SUPABASE_ANON_KEY="$ANON_KEY"
-          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
-          export SUPABASE_DB_URL="$DB_URL"
-          npm run test:isolation
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "SUPABASE_DB_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
+
+      - name: Isolation test (anon-key authenticated user)
+        run: npm run test:isolation
+
+      - name: Smoke test (sign in, add/read/archive athlete)
+        run: npm run test:smoke
 
       - name: Stop Supabase
         if: always()

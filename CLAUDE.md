@@ -15,3 +15,7 @@ Supabase (Postgres, Auth, RLS, Edge Functions), vanilla JS, Vite + modules, GitH
 - Every schema change is a numbered migration file. Never the dashboard.
 - Verify writes: an empty array with a null error is an anomaly, not a success.
 - Never commit, push or tag unless explicitly told to.
+
+## Never
+- Do not run repo-wide formatters or codemods (`prettier --write .`, `eslint --fix .`).
+  Format only files this task created or edited.

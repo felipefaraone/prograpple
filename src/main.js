@@ -1,30 +1,33 @@
 import './lib/sentry.js';
 import './ui/tokens.css';
 import './ui/app.css';
+import './ui/video.css';
 
 import { supabase } from './lib/supabase.js';
 import { el, mount } from './ui/dom.js';
 import { renderSignIn } from './features/auth/view.js';
 import { renderShell } from './ui/shell.js';
 import { renderAthletes } from './features/athletes/view.js';
+import { renderVideoRoom } from './features/video-room/view.js';
 import { getActiveOrgId, clearOrgCache } from './lib/org.js';
 
 const appRoot = document.querySelector('#app');
 
 async function renderApp(session) {
-  const { root, content } = renderShell({
-    email: session.user.email,
-    onSignOut: async () => {
-      clearOrgCache();
-      await supabase.auth.signOut();
-    },
-  });
-  mount(appRoot, root);
+  const onSignOut = async () => {
+    clearOrgCache();
+    await supabase.auth.signOut();
+  };
 
   // The org comes from the bootstrap trigger via memberships — never provisioned
   // by the client. If it is missing, say so honestly rather than inventing one.
   const { orgId, error } = await getActiveOrgId(supabase);
   if (error || !orgId) {
+    const { root, content } = renderShell({
+      email: session.user.email,
+      onSignOut,
+    });
+    mount(appRoot, root);
     content.append(
       el('div', {
         class: 'notice error',
@@ -33,7 +36,30 @@ async function renderApp(session) {
     );
     return;
   }
-  renderAthletes(content, { client: supabase, orgId });
+
+  const { root, content, setActive } = renderShell({
+    email: session.user.email,
+    onSignOut,
+    nav: [
+      {
+        id: 'videos',
+        label: 'Videos',
+        iconName: 'film',
+        onSelect: () => renderVideoRoom(content, { client: supabase, orgId }),
+      },
+      {
+        id: 'athletes',
+        label: 'Athletes',
+        iconName: 'users',
+        onSelect: () => renderAthletes(content, { client: supabase, orgId }),
+      },
+    ],
+  });
+  mount(appRoot, root);
+
+  // Default landing surface is the Video Room (this slice's focus).
+  setActive('videos');
+  renderVideoRoom(content, { client: supabase, orgId });
 }
 
 function renderAuth() {

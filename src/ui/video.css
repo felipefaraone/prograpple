@@ -1,0 +1,231 @@
+/*
+ * Video Room, player, controls and timeline styles. Tokens only — no hardcoded
+ * hex (CONVENTIONS §11). The video stage is intentionally dark; it uses the token
+ * ramp rather than a raw colour.
+ */
+
+/* --- nav ------------------------------------------------------------------ */
+.app-nav {
+  display: flex;
+  gap: var(--space-1);
+}
+.app-nav .nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.app-nav .nav-btn:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+.app-nav .nav-btn.on {
+  background: var(--panel-3);
+  color: var(--text);
+}
+
+/* --- video list ----------------------------------------------------------- */
+.video-row {
+  cursor: pointer;
+}
+.video-row:hover {
+  background: var(--panel-2);
+}
+.video-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- create form ---------------------------------------------------------- */
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  max-width: 520px;
+}
+.create-form .pair-row {
+  display: flex;
+  gap: var(--space-3);
+}
+.create-form .pair-row .field {
+  flex: 1;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* --- player --------------------------------------------------------------- */
+.player-area {
+  margin-top: var(--space-4);
+}
+.stage {
+  position: relative;
+  background: var(--text);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-items: center;
+}
+.stage video {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  flex-wrap: wrap;
+}
+.ctl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--panel);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.ctl-btn:hover {
+  background: var(--panel-2);
+}
+.ctl-btn.play {
+  color: var(--accent-deep);
+}
+.scrub {
+  flex: 1;
+  min-width: 120px;
+  accent-color: var(--accent);
+}
+.ctl-time {
+  font-family: var(--font-m);
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.speed-group {
+  display: flex;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+}
+.speed-group .speed {
+  height: 32px;
+  padding: 0 var(--space-2);
+  font-family: var(--font-m);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--line);
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.speed-group .speed:last-child {
+  border-right: none;
+}
+.speed-group .speed:hover {
+  color: var(--text);
+}
+.speed-group .speed.on {
+  background: var(--text);
+  color: var(--panel);
+}
+
+/* --- relink --------------------------------------------------------------- */
+.relink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+  padding: var(--space-10) var(--space-5);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--panel-2);
+}
+.relink-icon {
+  color: var(--text-faint);
+}
+.relink-title {
+  font-family: var(--font-d);
+  font-weight: 650;
+  font-size: var(--text-md);
+}
+.relink .input[type='file'] {
+  max-width: 320px;
+}
+
+/* --- timeline ------------------------------------------------------------- */
+.timeline-box {
+  margin-top: var(--space-4);
+}
+.timeline {
+  position: relative;
+  padding: var(--space-4) 0;
+}
+.tl-line {
+  height: 2px;
+  background: var(--line-2);
+  border-radius: var(--r-pill);
+}
+.tl-lane {
+  position: relative;
+  height: 22px;
+}
+.tl-marker {
+  position: absolute;
+  width: 4px;
+  height: 16px;
+  border-radius: var(--r-sm);
+  border: none;
+  transform: translateX(-2px);
+  cursor: pointer;
+  padding: 0;
+}
+.tl-lane.athlete .tl-marker {
+  bottom: 0;
+  background: var(--us);
+}
+.tl-lane.opponent .tl-marker {
+  top: 0;
+  background: var(--them);
+}
+.tl-empty {
+  text-align: center;
+  padding: var(--space-4);
+}

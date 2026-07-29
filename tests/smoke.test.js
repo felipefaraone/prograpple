@@ -28,6 +28,11 @@ import {
   listAthletes,
   archiveAthlete,
 } from '../src/features/athletes/data.js';
+import {
+  createVideo,
+  listVideos,
+  archiveVideo,
+} from '../src/features/video-room/data.js';
 import { getActiveOrgId } from '../src/lib/org.js';
 
 const URL = requireEnv('SUPABASE_URL');
@@ -191,5 +196,64 @@ test('add an athlete, read it back, archive it, it leaves the list', async () =>
     afterArchive.some((a) => a.id === added.id),
     false,
     'the archived athlete should no longer appear in active_athletes'
+  );
+});
+
+test('create a video with a pairing, read it back, archive it, it leaves the list', async () => {
+  const { client, orgId } = state;
+
+  // A pairing needs two athletes (§4.1: subject + opponent, both on the video).
+  const { data: subject, error: sErr } = await addAthlete(client, {
+    orgId,
+    name: 'Subject Athlete',
+    kind: 'athlete',
+  });
+  assert.equal(sErr, null, `addAthlete(subject): ${sErr?.message}`);
+  const { data: opponent, error: oErr } = await addAthlete(client, {
+    orgId,
+    name: 'Opponent Athlete',
+    kind: 'opponent',
+  });
+  assert.equal(oErr, null, `addAthlete(opponent): ${oErr?.message}`);
+
+  const { data: video, error: createErr } = await createVideo(client, {
+    orgId,
+    title: 'Smoke Round 1',
+    athleteId: subject.id,
+    opponentId: opponent.id,
+    source: {
+      type: 'url',
+      url: 'https://example.test/round1.mp4',
+      duration: 360,
+    },
+  });
+  assert.equal(createErr, null, `createVideo: ${createErr?.message}`);
+  assert.ok(video?.id, 'create should return the new video');
+  assert.equal(video.athlete_id, subject.id, 'pairing subject persisted');
+  assert.equal(video.opponent_id, opponent.id, 'pairing opponent persisted');
+  assert.equal(video.source_type, 'url');
+
+  const { data: afterCreate, error: listErr } = await listVideos(client, orgId);
+  assert.equal(listErr, null, `listVideos: ${listErr?.message}`);
+  assert.ok(
+    afterCreate.some((v) => v.id === video.id),
+    'the new video should read back from active_videos'
+  );
+
+  const { error: archiveErr } = await archiveVideo(client, {
+    id: video.id,
+    orgId,
+  });
+  assert.equal(archiveErr, null, `archiveVideo: ${archiveErr?.message}`);
+
+  const { data: afterArchive, error: list2Err } = await listVideos(
+    client,
+    orgId
+  );
+  assert.equal(list2Err, null, `listVideos(2): ${list2Err?.message}`);
+  assert.equal(
+    afterArchive.some((v) => v.id === video.id),
+    false,
+    'the archived video should no longer appear in active_videos'
   );
 });

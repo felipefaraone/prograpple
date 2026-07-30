@@ -24,6 +24,18 @@ export function clear(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
 }
 
+// True when focus is in a text field, so keyboard shortcuts stay suppressed there.
+export function isTypingTarget(target) {
+  if (!target) return false;
+  const tag = target.tagName;
+  return (
+    tag === 'INPUT' ||
+    tag === 'TEXTAREA' ||
+    tag === 'SELECT' ||
+    target.isContentEditable === true
+  );
+}
+
 export function mount(node, child) {
   clear(node);
   node.append(child);

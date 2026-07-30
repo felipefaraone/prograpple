@@ -1,0 +1,79 @@
+// Tag data layer (ARCHITECTURE §3, §6). Pure functions over an injected client,
+// returning verified results. The outbox (outbox.js) wraps insert/delete with
+// batching + retry; the smoke test drives these same functions directly.
+
+import { fetchAllPaged } from '../../lib/paged.js';
+
+export const TAG_COLS =
+  'id, org_id, video_id, timestamp_seconds, side, taxonomy_id, result';
+
+// The ONE source function for "what are the tags of this video?" (CONVENTIONS §9),
+// through the paging helper with explicit ordering (§6.2). Used to hydrate the
+// in-memory store on open and on reload.
+export function fetchTagsForVideo(client, orgId, videoId) {
+  return fetchAllPaged(client, {
+    table: 'tags',
+    columns: TAG_COLS,
+    eq: { org_id: orgId, video_id: videoId },
+    orderColumn: 'timestamp_seconds',
+    ascending: true,
+    tiebreak: 'id',
+  });
+}
+
+// Insert a batch idempotently and VERIFY it (ARCHITECTURE §3.2, CONVENTIONS §10).
+// - Client-generated ids + ON CONFLICT DO NOTHING make a retry after an ambiguous
+//   failure safe (T11).
+// - A mutation returning an empty array with a null error is NOT trusted as
+//   success: any id neither returned by the write nor found by a follow-up select
+//   is a silent no-op and is reported as missing so the caller requeues it.
+// Returns { persistedIds, missingIds, error }.
+export async function insertTags(client, tags) {
+  if (!tags.length) return { persistedIds: [], missingIds: [], error: null };
+  const ids = tags.map((t) => t.id);
+
+  const { data, error } = await client
+    .from('tags')
+    .upsert(tags, { onConflict: 'id', ignoreDuplicates: true })
+    .select('id');
+  if (error) return { persistedIds: [], missingIds: ids, error };
+
+  const returned = new Set((data || []).map((r) => r.id));
+  const notReturned = ids.filter((id) => !returned.has(id));
+  if (notReturned.length === 0) {
+    return { persistedIds: ids, missingIds: [], error: null };
+  }
+
+  // Not returned means either already-present (a safe retry) or silently dropped.
+  // Distinguish by reading them back, rather than assuming the empty result meant
+  // success — the exact myBJJ bug this guards against.
+  const { data: check, error: checkErr } = await client
+    .from('tags')
+    .select('id')
+    .in('id', notReturned);
+  if (checkErr) {
+    return {
+      persistedIds: [...returned],
+      missingIds: notReturned,
+      error: checkErr,
+    };
+  }
+
+  const present = new Set((check || []).map((r) => r.id));
+  const persistedIds = ids.filter((id) => returned.has(id) || present.has(id));
+  const missingIds = ids.filter((id) => !returned.has(id) && !present.has(id));
+  return { persistedIds, missingIds, error: null };
+}
+
+// Delete a batch (§3.1: delete gets the same treatment). Deleting an id that is
+// already absent returns no rows and is also success (idempotent).
+export async function deleteTags(client, ids) {
+  if (!ids.length) return { ok: true, error: null };
+  const { error } = await client
+    .from('tags')
+    .delete()
+    .in('id', ids)
+    .select('id');
+  if (error) return { ok: false, error };
+  return { ok: true, error: null };
+}

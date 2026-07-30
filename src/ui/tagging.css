@@ -1,0 +1,209 @@
+/*
+ * Tagging: side toggle, quick-tags, palette, unsaved indicator. Tokens only, no
+ * hardcoded hex (CONVENTIONS §11). No emoji; kbd hints and text carry meaning.
+ */
+
+.tag-box {
+  margin-top: var(--space-4);
+}
+.tag-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+}
+.tag-bar-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.tag-bar-top .spacer {
+  flex: 1;
+}
+.tag-hint {
+  font-size: var(--text-xs);
+}
+
+/* --- side toggle ---------------------------------------------------------- */
+.side-toggle {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--panel-2);
+  width: fit-content;
+}
+.side-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-faint);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  transition:
+    background 0.14s var(--ease),
+    color 0.14s;
+}
+.side-btn .side-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--line-2);
+}
+.side-btn.athlete .side-dot {
+  background: var(--us);
+}
+.side-btn.opponent .side-dot {
+  background: var(--them);
+}
+.side-btn.on {
+  color: var(--panel);
+}
+.side-btn.athlete.on {
+  background: var(--us);
+}
+.side-btn.opponent.on {
+  background: var(--them);
+}
+.side-btn.on .side-dot {
+  background: var(--panel);
+}
+
+/* --- quick-tags ----------------------------------------------------------- */
+.quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.quick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  background: var(--panel);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    transform 0.08s var(--ease);
+}
+.quick-chip:hover {
+  background: var(--panel-2);
+}
+.quick-chip:active {
+  transform: translateY(1px);
+}
+.quick-chip .qc-res {
+  font-size: var(--text-xs);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--r-pill);
+  padding: 0 var(--space-2);
+}
+
+kbd {
+  font-family: var(--font-m);
+  font-size: var(--text-xs);
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  border-radius: var(--r-sm);
+  padding: 0 5px;
+  color: var(--text-dim);
+  background: var(--panel-2);
+}
+
+/* --- unsaved indicator ---------------------------------------------------- */
+.unsaved {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--r-pill);
+  padding: 2px var(--space-3);
+}
+
+/* --- palette (mounts at app root) ----------------------------------------- */
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 22, 28, 0.28);
+  display: grid;
+  place-items: start center;
+  padding-top: 12vh;
+  z-index: 50;
+}
+.palette-panel {
+  width: min(560px, 92vw);
+  max-height: 68vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.palette-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+.palette-head .palette-input {
+  flex: 1;
+}
+.palette-list {
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+.palette-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--r);
+  background: transparent;
+  text-align: left;
+  color: var(--text);
+}
+.palette-item:hover,
+.palette-item.on {
+  background: var(--panel-2);
+}
+.palette-item .pi-term {
+  font-weight: 500;
+  flex: 1;
+}
+.palette-item .pi-cat {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.palette-item .pi-syn {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.palette-none {
+  padding: var(--space-4);
+  text-align: center;
+}

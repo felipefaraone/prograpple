@@ -33,6 +33,11 @@ import {
   listVideos,
   archiveVideo,
 } from '../src/features/video-room/data.js';
+import {
+  insertTags,
+  fetchTagsForVideo,
+  deleteTags,
+} from '../src/features/tagging/tags-data.js';
 import { getActiveOrgId } from '../src/lib/org.js';
 
 const URL = requireEnv('SUPABASE_URL');
@@ -255,5 +260,83 @@ test('create a video with a pairing, read it back, archive it, it leaves the lis
     afterArchive.some((v) => v.id === video.id),
     false,
     'the archived video should no longer appear in active_videos'
+  );
+});
+
+test('drop a tag, read it back, delete it, it is gone', async () => {
+  const { client, orgId } = state;
+
+  // A video to tag against, and a global taxonomy id for the FK.
+  const { data: video, error: vErr } = await createVideo(client, {
+    orgId,
+    title: 'Tag Round',
+    athleteId: null,
+    opponentId: null,
+    source: { type: 'url', url: 'https://example.test/tag.mp4', duration: 300 },
+  });
+  assert.equal(vErr, null, `createVideo: ${vErr?.message}`);
+
+  const { data: tax } = await client
+    .from('taxonomy')
+    .select('id')
+    .is('org_id', null)
+    .limit(1)
+    .single();
+  assert.ok(tax?.id, 'a global taxonomy row should exist');
+
+  // Drop: client-generated id (T11), verified insert (§3.2).
+  const tag = {
+    id: crypto.randomUUID(),
+    org_id: orgId,
+    video_id: video.id,
+    timestamp_seconds: 42.5,
+    side: 'opponent',
+    taxonomy_id: tax.id,
+    result: null,
+  };
+  const {
+    persistedIds,
+    missingIds,
+    error: insErr,
+  } = await insertTags(client, [tag]);
+  assert.equal(insErr, null, `insertTags: ${insErr?.message}`);
+  assert.deepEqual(missingIds, [], 'no tag should be missing after insert');
+  assert.ok(
+    persistedIds.includes(tag.id),
+    'the tag should be verified as persisted'
+  );
+
+  // Read back and assert the fields that matter persisted correctly.
+  const { data: tags, error: readErr } = await fetchTagsForVideo(
+    client,
+    orgId,
+    video.id
+  );
+  assert.equal(readErr, null, `fetchTagsForVideo: ${readErr?.message}`);
+  const readBack = tags.find((t) => t.id === tag.id);
+  assert.ok(readBack, 'the dropped tag should read back');
+  assert.equal(readBack.side, 'opponent', 'side persisted');
+  assert.equal(
+    Number(readBack.timestamp_seconds),
+    42.5,
+    'timestamp_seconds persisted'
+  );
+  assert.equal(readBack.taxonomy_id, tax.id, 'taxonomy_id persisted');
+
+  // Delete and confirm it is gone.
+  const { ok, error: delErr } = await deleteTags(client, [tag.id]);
+  assert.equal(delErr, null, `deleteTags: ${delErr?.message}`);
+  assert.ok(ok, 'delete should report success');
+
+  const { data: after, error: read2Err } = await fetchTagsForVideo(
+    client,
+    orgId,
+    video.id
+  );
+  assert.equal(read2Err, null, `fetchTagsForVideo(2): ${read2Err?.message}`);
+  assert.equal(
+    after.some((t) => t.id === tag.id),
+    false,
+    'the deleted tag should be gone'
   );
 });

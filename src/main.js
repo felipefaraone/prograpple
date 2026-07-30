@@ -2,6 +2,7 @@ import './lib/sentry.js';
 import './ui/tokens.css';
 import './ui/app.css';
 import './ui/video.css';
+import './ui/tagging.css';
 
 import { supabase } from './lib/supabase.js';
 import { el, mount } from './ui/dom.js';
@@ -9,6 +10,8 @@ import { renderSignIn } from './features/auth/view.js';
 import { renderShell } from './ui/shell.js';
 import { renderAthletes } from './features/athletes/view.js';
 import { renderVideoRoom } from './features/video-room/view.js';
+import { loadTaxonomy } from './features/tagging/taxonomy.js';
+import { resolveQuickTags } from './features/tagging/quick-tags.js';
 import { getActiveOrgId, clearOrgCache } from './lib/org.js';
 
 const appRoot = document.querySelector('#app');
@@ -35,6 +38,17 @@ async function renderApp(session) {
       })
     );
     return;
+  }
+
+  // Load the taxonomy once on app load (§5.4), then resolve the quick-tags
+  // against it — failing loudly here if the seed and the constant disagree (§5.3),
+  // so the error is seen at load rather than as a dead button later.
+  const { error: taxError } = await loadTaxonomy(supabase);
+  if (taxError) console.error('[taxonomy] failed to load:', taxError.message);
+  try {
+    resolveQuickTags();
+  } catch (quickErr) {
+    console.error('[quick-tags]', quickErr.message);
   }
 
   const { root, content, setActive } = renderShell({

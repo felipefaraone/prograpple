@@ -8,7 +8,7 @@ import { icon } from '../../ui/icons.js';
 import { createPlayer, probeDuration } from '../../lib/player.js';
 import { mountControls } from '../../lib/player-controls.js';
 import { listAthletes } from '../athletes/data.js';
-import { renderTimeline } from '../timeline/timeline.js';
+import { mountTagger } from '../tagging/tagger.js';
 import { listVideos, createVideo, archiveVideo } from './data.js';
 import { validateUrl, fingerprintMatches } from './source.js';
 
@@ -19,8 +19,13 @@ const sessionFiles = new Map();
 
 export function renderVideoRoom(container, { client, orgId }) {
   let teardownPlayer = null;
+  let tagger = null;
 
   function disposePlayer() {
+    if (tagger) {
+      tagger.destroy();
+      tagger = null;
+    }
     if (teardownPlayer) {
       teardownPlayer();
       teardownPlayer = null;
@@ -285,6 +290,7 @@ export function renderVideoRoom(container, { client, orgId }) {
         : 'No pairing set';
 
     const playerArea = el('div', { class: 'player-area' });
+    const tagBox = el('div', { class: 'tag-box' });
     const timelineBox = el('div', { class: 'timeline-box' });
 
     mount(
@@ -307,19 +313,23 @@ export function renderVideoRoom(container, { client, orgId }) {
           text: `${pairing} · ${video.source_type}`,
         }),
         playerArea,
+        tagBox,
         timelineBox
       )
     );
 
     let player = null;
-    const drawTimeline = () =>
-      renderTimeline(timelineBox, {
-        client,
-        orgId,
-        videoId: video.id,
-        duration: player?.duration ?? video.duration_seconds,
-        onSeek: (s) => player?.seek(s),
-      });
+
+    // The tagger owns the store + timeline and reaches the video only through the
+    // player contract via getPlayer().
+    tagger = mountTagger({
+      client,
+      orgId,
+      video,
+      getPlayer: () => player,
+      tagBarContainer: tagBox,
+      timelineContainer: timelineBox,
+    });
 
     const startPlayer = (source) => {
       clear(playerArea);
@@ -335,7 +345,7 @@ export function renderVideoRoom(container, { client, orgId }) {
       });
       player.on('ready', () => {
         errorBox.hidden = true;
-        drawTimeline(); // now we have a real duration to position against
+        tagger.refreshDuration(); // real duration → reposition markers
       });
       teardownPlayer = () => {
         controls.destroy();
@@ -355,8 +365,6 @@ export function renderVideoRoom(container, { client, orgId }) {
         startPlayer({ type: 'local', file });
       });
     }
-
-    drawTimeline();
   }
 
   // "Video not loaded — locate file" (§2.3). Match on all three fingerprint

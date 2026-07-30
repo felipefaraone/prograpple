@@ -195,12 +195,17 @@ export function renderVideoRoom(container, { client, orgId }) {
           if (sourceType.value === 'local') {
             pickedFile = fileInput.files?.[0];
             if (!pickedFile) return fail('Choose a video file.');
-            const duration = await probeDuration({
-              type: 'local',
-              file: pickedFile,
-            });
-            if (duration == null)
-              return fail("Couldn't read that file — is it a playable video?");
+            // Duration is required for a local video (it is half the relink
+            // fingerprint), so a probe failure blocks create with its real reason.
+            let duration;
+            try {
+              duration = await probeDuration({
+                type: 'local',
+                file: pickedFile,
+              });
+            } catch (probeError) {
+              return fail(probeError.message);
+            }
             source = {
               type: 'local',
               fileName: pickedFile.name,
@@ -210,10 +215,14 @@ export function renderVideoRoom(container, { client, orgId }) {
           } else {
             const check = validateUrl(urlInput.value);
             if (!check.ok) return fail(check.message);
-            const duration = await probeDuration({
-              type: 'url',
-              url: check.url,
-            }); // best-effort
+            // Best-effort: a URL's duration is nice-to-have, not required, so a
+            // probe failure must not block create.
+            let duration;
+            try {
+              duration = await probeDuration({ type: 'url', url: check.url });
+            } catch {
+              duration = null;
+            }
             source = { type: 'url', url: check.url, duration };
           }
 
@@ -365,7 +374,14 @@ export function renderVideoRoom(container, { client, orgId }) {
     fileInput.addEventListener('change', async () => {
       const file = fileInput.files?.[0];
       if (!file) return;
-      const duration = await probeDuration({ type: 'local', file });
+      // If the pick can't be read, treat duration as unknown — the fingerprint
+      // then reports a length mismatch rather than throwing.
+      let duration;
+      try {
+        duration = await probeDuration({ type: 'local', file });
+      } catch {
+        duration = null;
+      }
       const match = fingerprintMatches(video, file, duration);
       if (match.all) {
         onFile(file);

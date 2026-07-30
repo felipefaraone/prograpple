@@ -160,41 +160,98 @@ export function createPlayer(container) {
   };
 }
 
-// Read a source's duration by loading only its metadata. Local blobs resolve
-// fast and reliably; a URL is best-effort with a timeout so create never hangs.
-// Lives here because it is the only other place that needs a <video> element.
-export function probeDuration(source, { timeoutMs = 8000 } = {}) {
-  return new Promise((resolve) => {
-    const probe = document.createElement('video');
-    probe.preload = 'metadata';
-    let url = null;
-    let settled = false;
+// Read a source's duration by loading only its metadata. Deterministic:
+//   - every listener is attached BEFORE src is assigned;
+//   - both loadedmetadata AND durationchange are observed, because for some
+//     containers duration is still NaN/Infinity at loadedmetadata and is only
+//     corrected by durationchange — reading once was the intermittency;
+//   - metadata already available when we attach is read immediately;
+//   - the blob URL is revoked only after the probe settles, never before;
+//   - a timeout applies to network URLs only (a local blob cannot hang), so it is
+//     an explicit genuine-failure path, not a competitor to a progressing load.
+// Resolves with a finite duration in seconds, or REJECTS with a specific message
+// on genuine failure — never a silent null for a valid file. Lives here because
+// it is the only other place that needs a <video> element.
+export function probeDuration(source, options = {}) {
+  const type = source?.type;
+  const timeoutMs = options.timeoutMs ?? (type === 'url' ? 30000 : 0);
 
-    const finish = (value) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      if (url) URL.revokeObjectURL(url);
-      probe.removeAttribute('src');
-      probe.load();
-      resolve(value);
-    };
-
-    const timer = setTimeout(() => finish(null), timeoutMs);
-    probe.addEventListener('loadedmetadata', () =>
-      finish(Number.isFinite(probe.duration) ? probe.duration : null)
-    );
-    probe.addEventListener('error', () => finish(null));
-
-    if (source?.type === 'local') {
-      url = URL.createObjectURL(source.file);
-      probe.src = url;
-    } else if (source?.type === 'url') {
-      probe.src = source.url;
-    } else {
-      finish(null);
+  return new Promise((resolve, reject) => {
+    if (type !== 'local' && type !== 'url') {
+      reject(new Error('probeDuration: source must be {type:"url"|"local"}'));
       return;
     }
+
+    const probe = document.createElement('video');
+    probe.preload = 'metadata';
+
+    let url = null;
+    let timer = null;
+    let settled = false;
+
+    // Detach listeners first, then tear down the element, then revoke the URL —
+    // so no stray error fires and metadata is fully read before revoke.
+    const cleanup = () => {
+      probe.removeEventListener('loadedmetadata', onMeta);
+      probe.removeEventListener('durationchange', onMeta);
+      probe.removeEventListener('error', onError);
+      if (timer) clearTimeout(timer);
+      probe.removeAttribute('src');
+      probe.load();
+      if (url) URL.revokeObjectURL(url);
+    };
+
+    const succeed = (seconds) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(seconds);
+    };
+    const failWith = (message) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(message));
+    };
+
+    // Succeeds once a finite, known duration is available.
+    const tryRead = () => {
+      const d = probe.duration;
+      if (Number.isFinite(d) && d > 0) {
+        succeed(d);
+        return true;
+      }
+      return false;
+    };
+
+    const onMeta = () => tryRead();
+    const onError = () => failWith(describeError(probe.error).message);
+
+    probe.addEventListener('loadedmetadata', onMeta);
+    probe.addEventListener('durationchange', onMeta);
+    probe.addEventListener('error', onError);
+
+    if (timeoutMs > 0) {
+      timer = setTimeout(
+        () =>
+          failWith(
+            'Timed out reading the video metadata. Check the URL or your connection.'
+          ),
+        timeoutMs
+      );
+    }
+
+    // Assign the source only AFTER every listener is attached.
+    if (type === 'local') {
+      url = URL.createObjectURL(source.file);
+      probe.src = url;
+    } else {
+      probe.src = source.url;
+    }
     probe.load();
+
+    // Metadata may already be available by now — read it rather than waiting for
+    // an event that has already fired.
+    if (probe.readyState >= 1 /* HAVE_METADATA */) tryRead();
   });
 }

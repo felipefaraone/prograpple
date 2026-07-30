@@ -62,7 +62,7 @@ export function renderSignIn({ onSendLink }) {
       card(
         el('div', {
           class: 'signin-lead',
-          text: 'Sign in with a magic link — no password.',
+          text: 'Sign in with a magic link. No password needed.',
         }),
         form
       )

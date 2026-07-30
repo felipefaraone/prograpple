@@ -15,6 +15,8 @@ export async function fetchAllPaged(
     table,
     columns = '*',
     eq = {},
+    is = {}, // { column: value } → .is() (e.g. archived_at: null for the Active view)
+    notNull = [], // [column] → .not(column, 'is', null) (e.g. the Archived view)
     orderColumn,
     ascending = true,
     tiebreak = 'id',
@@ -34,6 +36,12 @@ export async function fetchAllPaged(
     let query = client.from(table).select(columns);
     for (const [column, value] of Object.entries(eq)) {
       query = query.eq(column, value);
+    }
+    for (const [column, value] of Object.entries(is)) {
+      query = query.is(column, value);
+    }
+    for (const column of notNull) {
+      query = query.not(column, 'is', null);
     }
     query = query
       .order(orderColumn, { ascending })

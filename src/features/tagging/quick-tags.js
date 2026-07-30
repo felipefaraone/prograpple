@@ -102,7 +102,7 @@ export function resolveQuickTags() {
   }
   if (failures.length) {
     throw new Error(
-      `Quick-tags failed to resolve against the taxonomy — the seed and this ` +
+      `Quick-tags failed to resolve against the taxonomy. The seed and this ` +
         `constant disagree. Fix the seed or the constant:\n  ${failures.join('\n  ')}`
     );
   }

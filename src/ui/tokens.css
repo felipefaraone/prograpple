@@ -1,54 +1,84 @@
 /*
- * Design tokens — the ONE place raw hex/values live (CONVENTIONS §11: no
- * hardcoded hex anywhere else). Colours, shadows, radii and fonts are extracted
- * verbatim from Prototype/index.html; the spacing and type scales are distilled
- * from the prototype's inline values into a small, consistent scale.
+ * Design tokens — the ONE place raw hex/values live (CONVENTIONS §11 / DESIGN §9.1:
+ * no hardcoded hex anywhere else). Values are the single source of truth in
+ * docs/DESIGN.md (mirrored at "Design System/32_DESIGN.md"); token names follow the
+ * doc's tables.
  */
 :root {
-  /* Surfaces */
-  --bg: #f4f4f6;
+  /* Neutral foundation — the chrome (DESIGN §1.1) */
+  --bg: #f5f5f7;
   --panel: #ffffff;
-  --panel-2: #f0f0f3;
-  --panel-3: #e8e8ed;
-  --line: #e7e7ec;
-  --line-2: #d6d6dd;
+  --panel-2: #f0f0f2;
+  --panel-3: #e8e8ea;
+  --line: #e6e6e9;
+  --line-2: #d4d4d9;
 
-  /* Text */
-  --text: #17181c;
-  --text-dim: #5c626e;
-  --text-faint: #8f95a1;
+  /* Text (§1.1) — three levels, never more */
+  --text: #1d1d1f;
+  --text-dim: #56565e;
+  --text-faint: #8b8b92;
 
-  /* Accent */
-  --accent: #e07c00;
-  --accent-soft: #fdf2e2;
-  --accent-dim: #f0c48a;
-  --accent-deep: #a35a00;
+  /* The stage exception (§1.1): the one intentionally dark surface + its on-dark text */
+  --stage: #0c0e12;
+  --stage-text: #d4d9e1; /* primary text inside the stage */
+  --stage-text-2: #7d8595; /* secondary text inside the stage */
 
-  /* Sides (subject / opponent) */
+  /* Ink — the action color (§1.2). There is NO hue accent: every "interactive /
+     current / mine" signal is graphite. */
+  --ink: #1d1d1f; /* filled primaries, active nav, playhead, progress, focus ring */
+  --ink-soft: rgba(
+    29,
+    29,
+    31,
+    0.07
+  ); /* current row, clip ranges, selected palette row */
+  --ink-dim: rgba(29, 29, 31, 0.22); /* clip outline, pressed outlines */
+
+  /* Side identity (§1.3) — us = blue, them = red. THE only strong color in the product */
   --us: #1470e0;
-  --us-soft: #e9f2fd;
+  --us-soft: #f2f7fd; /* near-subliminal lane tint */
   --them: #d63652;
-  --them-soft: #fdeef1;
+  --them-soft: #fdf3f5; /* near-subliminal lane tint */
 
-  /* Semantic — reuse the accent/side ramps rather than new hex */
+  /* Category palette (§1.4) — eight MUTED hues. Used ONLY in the roll-shape strip
+     (not built yet); referenced nowhere else in src. */
+  --c-pos: #5b7aa6; /* positions */
+  --c-pass: #5f9e82; /* passes */
+  --c-sweep: #8f7ab0; /* sweeps */
+  --c-td: #a87e63; /* takedowns */
+  --c-back: #a89a5f; /* back */
+  --c-legs: #5f9e9a; /* legs */
+  --c-sub: #b06a78; /* submissions */
+  --c-pts: #8a8f98; /* events */
+
+  /* Result badges (§1.5) — one quiet green for `scored`; attempted/defended are
+     neutral (they use the chrome tokens, so no dedicated colour tokens). */
+  --res-scored-text: #1e7a4a;
+  --res-scored-border: #b9dcc8;
+  --res-scored-fill: #eff8f2;
+
+  /* Destructive intent (§6.1): the local delete/archive ✕ borrows the side red on
+     hover only — small, local, never a standing red button. */
   --danger: var(--them);
   --danger-soft: var(--them-soft);
 
-  /* Shadows */
+  /* Elevation (§3.3) — three low-alpha shadows */
   --shadow-sm:
     0 1px 1px rgba(20, 22, 28, 0.04), 0 1px 3px rgba(20, 22, 28, 0.06);
   --shadow-md:
     0 1px 2px rgba(20, 22, 28, 0.05), 0 6px 18px rgba(20, 22, 28, 0.08);
   --shadow-lg:
     0 4px 10px rgba(20, 22, 28, 0.06), 0 20px 50px rgba(20, 22, 28, 0.16);
+  /* Inset hairline highlight on the dark stage card. */
+  --ring-hairline: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 
-  /* Radii */
-  --r-sm: 5px;
-  --r: 9px;
-  --r-lg: 14px;
-  --r-pill: 99px;
+  /* Radius (§3.2) */
+  --r-sm: 5px; /* kbd keycaps, small marks */
+  --r: 9px; /* controls */
+  --r-lg: 14px; /* surfaces: stage, cards, modals */
+  --r-pill: 99px; /* pills: chips, badges, count pills, toggles */
 
-  /* Type */
+  /* Typography (§2) */
   --font-d:
     -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto,
     Helvetica, Arial, sans-serif;
@@ -56,6 +86,7 @@
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
     Helvetica, Arial, sans-serif;
   --font-m: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  /* Type-size scale, bucketed from the §2.1 steps (Meta/Body-small/Body/Panel…). */
   --text-xs: 11px;
   --text-sm: 12px;
   --text-base: 14px;
@@ -63,8 +94,9 @@
   --text-lg: 17px;
   --text-xl: 22px;
   --text-2xl: 26px;
+  --text-h2: 34px; /* §2.1 H2 — section heads on full-page views */
 
-  /* Spacing scale */
+  /* Spacing — 4px grid (§3.1) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -74,6 +106,6 @@
   --space-8: 32px;
   --space-10: 40px;
 
-  /* Motion */
+  /* Motion (§4) */
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 }

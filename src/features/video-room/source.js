@@ -6,8 +6,15 @@
 // .mov is H.264 in practice; .m4v is the same container family.
 const VIDEO_EXTENSION = /\.(mp4|webm|mov|m4v)$/i;
 
-// Validate a URL on the way in (§2.1): https only + a recognisable video
-// extension. Reject clearly rather than loading something that will never play.
+// YouTube/Vimeo are deferred behind the player contract (T20) and are NOT in the
+// MVP. Their watch/page URLs are HTML, not media, so the native <video> element
+// cannot play them — reject on the way in rather than fail silently at playback.
+// Matches the host or any subdomain (www., m., player.).
+const BLOCKED_HOST = /(?:^|\.)(?:youtube\.com|youtu\.be|vimeo\.com)$/i;
+
+// Validate a URL on the way in (§2.1): https only, not a YouTube/Vimeo page link,
+// and ending in a real video extension. Reject clearly rather than loading
+// something the <video> element will never play.
 export function validateUrl(raw) {
   const value = (raw || '').trim();
   if (!value) return { ok: false, message: 'Enter a video URL.' };
@@ -21,10 +28,18 @@ export function validateUrl(raw) {
   if (parsed.protocol !== 'https:') {
     return { ok: false, message: 'The URL must start with https://.' };
   }
+  if (BLOCKED_HOST.test(parsed.hostname)) {
+    return {
+      ok: false,
+      message:
+        'YouTube and Vimeo links are not supported yet. Use a direct video file URL or a local file.',
+    };
+  }
   if (!VIDEO_EXTENSION.test(parsed.pathname)) {
     return {
       ok: false,
-      message: 'The URL must point to a video file (.mp4, .webm or .mov).',
+      message:
+        'That looks like a web page. Use a direct link to a video file ending in .mp4, .webm, or .mov.',
     };
   }
   return { ok: true, url: value };

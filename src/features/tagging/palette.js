@@ -76,7 +76,7 @@ export function createPalette({ onPick }) {
       list.append(
         el('div', {
           class: 'palette-none muted',
-          text: 'No match — try a synonym (RNC, DLR, 411…).',
+          text: 'No match. Try a synonym like RNC, DLR, or 411.',
         })
       );
     }

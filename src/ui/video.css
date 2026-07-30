@@ -4,37 +4,7 @@
  * ramp rather than a raw colour.
  */
 
-/* --- nav ------------------------------------------------------------------ */
-.app-nav {
-  display: flex;
-  gap: var(--space-1);
-}
-.app-nav .nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: 32px;
-  padding: 0 var(--space-3);
-  border: 1px solid transparent;
-  border-radius: var(--r);
-  background: transparent;
-  color: var(--text-dim);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  transition:
-    background 0.12s,
-    color 0.12s;
-}
-.app-nav .nav-btn:hover {
-  background: var(--panel-2);
-  color: var(--text);
-}
-.app-nav .nav-btn.on {
-  background: var(--panel-3);
-  color: var(--text);
-}
-
-/* --- video list ----------------------------------------------------------- */
+/* --- video list (row anatomy, DESIGN §6.5 adapted) ------------------------ */
 .video-row {
   cursor: pointer;
 }
@@ -44,6 +14,15 @@
 .video-meta {
   flex: 1;
   min-width: 0;
+}
+/* Archive is revealed on hover/focus, not standing (§6.5). */
+.video-row .actions {
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.video-row:hover .actions,
+.video-row:focus-within .actions {
+  opacity: 1;
 }
 
 /* --- create form ---------------------------------------------------------- */
@@ -71,24 +50,191 @@
   gap: var(--space-3);
 }
 
+/* --- workbench (two-pane, fixed height, no page scroll — matches prototype) --- */
+.workbench-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* One bar: a breadcrumb (Videos / <title>), pairing secondary, quiet hint right. */
+.wb-topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.wb-crumb {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+/* "Videos" links back to the list — a graphite text link (no hue accent, §1.2). */
+.wb-crumb .wb-crumb-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: var(--text-md);
+  font-family: var(--font-b);
+  color: var(--text-dim);
+  font-weight: 500;
+  cursor: pointer;
+}
+.wb-crumb .wb-crumb-link:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+.wb-crumb .wb-crumb-sep {
+  color: var(--text-faint);
+}
+.wb-crumb .wb-title {
+  font-family: var(--font-d);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wb-topbar .wb-pairing {
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.wb-topbar .spacer {
+  flex: 1;
+}
+/* Shortcut hints: subtle, small, right-aligned (prototype .topbar .hint). */
+.wb-topbar .wb-hint {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.workbench {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 400px; /* prototype .workbench */
+}
+@media (max-width: 1100px) {
+  .workbench {
+    grid-template-columns: 1fr 340px; /* prototype @media */
+  }
+}
+/* Left column: stage grows, timeline + transport + tag bar pinned below it, all
+   inside one viewport (prototype .player-col). */
+.player-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  overflow: hidden;
+}
+.side-pane {
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--bg);
+}
+.side-pane .side-head {
+  font-family: var(--font-d);
+  font-weight: 650;
+  font-size: var(--text-md);
+  letter-spacing: -0.015em;
+  margin-bottom: var(--space-2);
+}
+
+/* --- styled file picker (relink card + create form) ----------------------- */
+/* The raw <input type=file> is visually hidden but still focusable/operable;
+   the label is the styled, keyboard-reachable control. */
+.file-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 38px;
+  padding: 0 var(--space-4);
+  max-width: 100%;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+/* [hidden] must win over display:inline-flex (create form toggles the control). */
+.file-field[hidden] {
+  display: none;
+}
+.file-field:hover {
+  background: var(--panel-2);
+  border-color: var(--line-2);
+}
+.file-field:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.file-field svg {
+  flex: none;
+  color: var(--text-faint);
+}
+.file-field .file-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* --- player --------------------------------------------------------------- */
-.player-area {
-  margin-top: var(--space-4);
+.stage-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* Breathing room around the media card — matches the prototype .stage margin. */
+  padding: 16px 18px 0;
 }
 .stage {
+  flex: 1;
+  min-height: 0;
   position: relative;
-  background: var(--text);
+  background: var(--stage);
   border-radius: var(--r-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
-  aspect-ratio: 16 / 9;
-  display: grid;
-  place-items: center;
+  box-shadow: var(--shadow-md), var(--ring-hairline);
 }
+/* Absolutely fill the stage box (a definite box from the positioned ancestor),
+   then letterbox the frame inside it. Filling via inset:0 avoids the grid
+   auto-row percentage-height trap that was cropping the video. */
 .stage video {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+  object-fit: contain;
   display: block;
+}
+.controls-box {
+  padding: 0 var(--space-4);
 }
 
 .controls {
@@ -120,12 +266,74 @@
   background: var(--panel-2);
 }
 .ctl-btn.play {
-  color: var(--accent-deep);
+  color: var(--text);
 }
+/* Custom scrubber (DESIGN §6.5): graphite fill on a gray rail, graphite knob with
+   a white ring. Graphite + white only, no hue. */
 .scrub {
+  position: relative;
   flex: 1;
   min-width: 120px;
-  accent-color: var(--accent);
+  height: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+.scrub-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--line-2);
+}
+.scrub-fill {
+  position: absolute;
+  left: 0;
+  width: 0;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+}
+.scrub-knob {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow:
+    0 0 0 2px var(--panel),
+    var(--shadow-sm);
+  transform: translate(-50%, -50%);
+  /* Micro scale (§4): the knob and its ring grow on a 140ms transition. */
+  transition:
+    width 0.14s var(--ease),
+    height 0.14s var(--ease),
+    box-shadow 0.14s var(--ease);
+}
+.scrub:hover .scrub-knob,
+.scrub.dragging .scrub-knob {
+  width: 14px;
+  height: 14px;
+}
+/* Playing state: a second white/graphite ring blooms around the knob. No hue. */
+.scrub.playing .scrub-knob {
+  box-shadow:
+    0 0 0 3px var(--panel),
+    0 0 0 4px var(--ink-dim),
+    var(--shadow-sm);
+}
+/* Replace the global focus rectangle with a ring on the knob itself (§7). */
+.scrub:focus-visible {
+  outline: none;
+}
+.scrub:focus-visible .scrub-knob {
+  box-shadow:
+    0 0 0 2px var(--panel),
+    0 0 0 4px var(--ink);
 }
 .ctl-time {
   font-family: var(--font-m);
@@ -161,22 +369,27 @@
 .speed-group .speed:hover {
   color: var(--text);
 }
+/* Active speed step = graphite fill (§1.2). */
 .speed-group .speed.on {
-  background: var(--text);
+  background: var(--ink);
   color: var(--panel);
 }
 
-/* --- relink --------------------------------------------------------------- */
+/* --- relink: an empty state that fills the whole stage footprint (§6.9) ------ */
 .relink {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--space-3);
   text-align: center;
-  padding: var(--space-10) var(--space-5);
+  padding: 46px var(--space-6);
   border: 1px dashed var(--line-2);
   border-radius: var(--r-lg);
   background: var(--panel-2);
+  line-height: 1.7;
 }
 .relink-icon {
   color: var(--text-faint);
@@ -184,48 +397,286 @@
 .relink-title {
   font-family: var(--font-d);
   font-weight: 650;
-  font-size: var(--text-md);
+  font-size: 18px;
+  letter-spacing: -0.015em;
+  color: var(--text-dim);
 }
-.relink .input[type='file'] {
-  max-width: 320px;
+.relink .muted {
+  max-width: 420px;
+  font-size: 13px;
 }
 
-/* --- timeline ------------------------------------------------------------- */
+/* --- timeline: two bands (Overview + Detail), directly under the video -------
+   Position is data, never nudged: the overview clusters overlapping markers, the
+   detail band's 20s window separates them (DESIGN §6.5). */
 .timeline-box {
-  margin-top: var(--space-4);
+  /* spacing comes from .tl-wrap / .tl-legend below */
 }
-.timeline {
+.tl-wrap {
+  padding: 12px 18px 2px;
+}
+/* Wraps both bands + the connector overlay so the funnel can be drawn across them. */
+.tl-bands {
   position: relative;
-  padding: var(--space-4) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.tl-line {
-  height: 2px;
+.tl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tl-cap {
+  flex: none;
+  width: 54px;
+  text-align: right;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.tl {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 50px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px;
+  /* Lane shading: tinted band above the line (athlete) and below (opponent). */
+  background: linear-gradient(
+    to bottom,
+    var(--us-soft) 0 46%,
+    transparent 46% 54%,
+    var(--them-soft) 54% 100%
+  );
+}
+.tl-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 23px;
+  height: 4px;
   background: var(--line-2);
   border-radius: var(--r-pill);
 }
-.tl-lane {
-  position: relative;
-  height: 22px;
+.tl-buffer {
+  position: absolute;
+  left: 0;
+  top: 23px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  opacity: 0.55;
+  width: 0;
+}
+.tl-markers {
+  position: absolute;
+  inset: 0;
 }
 .tl-marker {
   position: absolute;
   width: 4px;
-  height: 16px;
-  border-radius: var(--r-sm);
+  border-radius: 3px;
   border: none;
-  transform: translateX(-2px);
-  cursor: pointer;
   padding: 0;
+  cursor: pointer;
+  transform: translateX(-2px);
+  transition:
+    height 0.12s var(--ease),
+    top 0.12s var(--ease),
+    width 0.12s;
+  box-shadow: 0 0 0 1.5px var(--panel);
 }
-.tl-lane.athlete .tl-marker {
-  bottom: 0;
+/* Side sets both the LANE and the COLOUR (DESIGN §1.4/§6.5): the marker agrees
+   with its lane rather than shouting a second thing. */
+.tl-marker.us {
+  top: 6px;
+  height: 14px;
   background: var(--us);
 }
-.tl-lane.opponent .tl-marker {
-  top: 0;
+.tl-marker.them {
+  top: 30px;
+  height: 14px;
   background: var(--them);
 }
-.tl-empty {
-  text-align: center;
-  padding: var(--space-4);
+.tl-marker:hover {
+  width: 6px;
+}
+.tl-marker.us:hover {
+  top: 3px;
+  height: 18px;
+}
+.tl-marker.them:hover {
+  top: 29px;
+  height: 18px;
+}
+/* Cluster: a slightly wider marker carrying a small count badge. */
+.tl-marker.tl-cluster {
+  width: 8px;
+}
+.tl-marker.tl-cluster:hover {
+  width: 10px;
+}
+.tl-cluster-badge {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-m);
+  font-size: 9px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  padding: 1px 4px;
+  pointer-events: none;
+}
+.tl-marker.us .tl-cluster-badge {
+  top: -10px;
+}
+.tl-marker.them .tl-cluster-badge {
+  bottom: -10px;
+}
+/* Cluster hover list (what is inside this cluster). */
+.tl-pop {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  display: none;
+  z-index: 5;
+  min-width: 60px;
+  padding: 6px 8px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+}
+.tl-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.tl-pop-row + .tl-pop-row {
+  margin-top: 3px;
+}
+.tl-pop-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 2.5px;
+}
+.tl-pop-dot.us {
+  background: var(--us);
+}
+.tl-pop-dot.them {
+  background: var(--them);
+}
+/* Playhead + progress fill are graphite (§1.2 / §6.5). */
+.tl-playhead {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  background: var(--ink);
+  border-radius: 2px;
+  transform: translateX(-1px);
+  pointer-events: none;
+}
+.tl-playhead::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--panel);
+}
+/* The detail playhead is fixed at centre — the window follows it, not the reverse. */
+.tl-detail-playhead {
+  left: 50%;
+}
+/* Detail band is framed to read as the zoomed content of the marked region. */
+.tl-detail {
+  box-shadow: inset 0 0 0 1px var(--ink-dim);
+}
+/* Focus-window: translucent viewport over the overview's current 20s slice. */
+.tl-viewport {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  border: 1px solid var(--ink-dim);
+  background: var(--ink-soft);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 3;
+}
+/* Funnel connecting the viewport edges down to the full width of the detail band. */
+.tl-connect {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2;
+}
+.tl-connect-line {
+  stroke: var(--ink-dim);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.tl-connect-fill {
+  fill: var(--ink-soft);
+}
+.tl-hover-time {
+  position: absolute;
+  top: -20px;
+  transform: translateX(-50%);
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  display: none;
+  pointer-events: none;
+  box-shadow: var(--shadow-sm);
+}
+.tl-legend {
+  display: flex;
+  gap: 16px;
+  padding: 2px 18px 0;
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.tl-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tl-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  display: block;
+}
+.tl-legend i.lane-us {
+  background: var(--us);
+}
+.tl-legend i.lane-them {
+  background: var(--them);
+}
+.tl-legend .lane-tag {
+  color: var(--text-faint);
 }

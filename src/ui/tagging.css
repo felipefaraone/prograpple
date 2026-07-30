@@ -3,18 +3,14 @@
  * hardcoded hex (CONVENTIONS §11). No emoji; kbd hints and text carry meaning.
  */
 
-.tag-box {
-  margin-top: var(--space-4);
-}
+/* Flat bottom bar pinned under the transport (prototype .tagbar), not a card. */
 .tag-bar {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px solid var(--line);
   background: var(--panel);
-  box-shadow: var(--shadow-sm);
 }
 .tag-bar-top {
   display: flex;
@@ -36,13 +32,17 @@
   border: 1px solid var(--line-2);
   border-radius: var(--r);
   background: var(--panel-2);
-  width: fit-content;
+  /* Fixed toggle width so both buttons stay equal regardless of name length. */
+  width: 300px;
+  max-width: 100%;
 }
 .side-btn {
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 0; /* equal width */
+  min-width: 0; /* allow the name to truncate */
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border: none;
   border-radius: var(--r-sm);
   background: transparent;
@@ -53,10 +53,24 @@
     background 0.14s var(--ease),
     color 0.14s;
 }
+.side-btn .side-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.side-btn .side-dot {
+  flex: none;
+}
+/* Side glyph is an 8px ROUNDED SQUARE (DESIGN §5), echoing the logo's paired
+   squares. Dots are reserved for category, which no longer exists outside the
+   roll-shape strip. */
 .side-btn .side-dot {
   width: 8px;
   height: 8px;
-  border-radius: var(--r-pill);
+  border-radius: 3px;
   background: var(--line-2);
 }
 .side-btn.athlete .side-dot {
@@ -77,6 +91,20 @@
 .side-btn.on .side-dot {
   background: var(--panel);
 }
+.side-btn .side-count {
+  flex: none; /* count always visible, never truncated */
+  font-family: var(--font-m);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+/* Tagging controls unavailable until the player has a loaded source (item 10). */
+.tag-bar.is-disabled .quick-row,
+.tag-bar.is-disabled .all-tags {
+  opacity: 0.5;
+  pointer-events: none;
+}
 
 /* --- quick-tags ----------------------------------------------------------- */
 .quick-row {
@@ -88,33 +116,28 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--line-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--line);
   border-radius: var(--r-pill);
   background: var(--panel);
   color: var(--text);
   font-size: var(--text-sm);
   font-weight: 500;
   box-shadow: var(--shadow-sm);
+  white-space: nowrap;
   transition:
     background 0.12s,
     border-color 0.12s,
-    transform 0.08s var(--ease);
+    transform 0.1s var(--ease);
 }
 .quick-chip:hover {
   background: var(--panel-2);
+  border-color: var(--line-2);
 }
 .quick-chip:active {
-  transform: translateY(1px);
+  transform: scale(0.93);
 }
-.quick-chip .qc-res {
-  font-size: var(--text-xs);
-  color: var(--accent-deep);
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-dim);
-  border-radius: var(--r-pill);
-  padding: 0 var(--space-2);
-}
+/* Quick-tag chips are text-only in v2.0 (§1.4/§6.3) — the label is the info; no dot. */
 
 kbd {
   font-family: var(--font-m);
@@ -127,13 +150,13 @@ kbd {
   background: var(--panel-2);
 }
 
-/* --- unsaved indicator ---------------------------------------------------- */
+/* --- unsaved indicator (neutral badge, §6.9 — no hue) --------------------- */
 .unsaved {
   font-size: var(--text-xs);
   font-weight: 600;
-  color: var(--accent-deep);
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-dim);
+  color: var(--text-dim);
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
   border-radius: var(--r-pill);
   padding: 2px var(--space-3);
 }
@@ -185,9 +208,13 @@ kbd {
   text-align: left;
   color: var(--text);
 }
-.palette-item:hover,
-.palette-item.on {
+.palette-item:hover {
   background: var(--panel-2);
+}
+/* Selected row: graphite tint + inset bar (§6.7). */
+.palette-item.on {
+  background: var(--ink-soft);
+  box-shadow: inset 3px 0 0 var(--ink);
 }
 .palette-item .pi-term {
   font-weight: 500;
@@ -206,4 +233,54 @@ kbd {
 .palette-none {
   padding: var(--space-4);
   text-align: center;
+}
+
+/* --- shortcuts overlay (mounts at app root) ------------------------------- */
+.kbd-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 20, 28, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 70;
+}
+.kbd-card {
+  width: min(440px, 92vw);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-6);
+}
+.kbd-card h4 {
+  font-family: var(--font-d);
+  font-size: var(--text-lg);
+  font-weight: 650;
+  letter-spacing: -0.018em;
+  margin: 0 0 var(--space-3);
+}
+.kbd-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.kbd-card td {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-dim);
+}
+.kbd-card td:first-child {
+  width: 120px;
+}
+.kbd-note {
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.kbd-foot {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  text-align: right;
 }

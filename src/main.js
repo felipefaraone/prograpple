@@ -1,6 +1,7 @@
 import './lib/sentry.js';
 import './ui/tokens.css';
 import './ui/app.css';
+import './ui/lists.css';
 import './ui/video.css';
 import './ui/tagging.css';
 
@@ -51,29 +52,55 @@ async function renderApp(session) {
     console.error('[quick-tags]', quickErr.message);
   }
 
-  const { root, content, setActive } = renderShell({
+  // Sidebar collapse state, remembered for the session. Entering the video room
+  // auto-collapses and leaving auto-expands — until the coach toggles manually,
+  // after which their choice wins for the rest of the session (do not fight them).
+  let collapsed = false;
+  let userOverrode = false;
+  let shell;
+  const autoSidebar = (wantCollapsed) => {
+    if (userOverrode) return;
+    collapsed = wantCollapsed;
+    shell.setCollapsed(collapsed);
+  };
+
+  // Athletes first — it is the central object of the data model (nav order + default).
+  shell = renderShell({
     email: session.user.email,
     onSignOut,
+    onToggle: () => {
+      userOverrode = true;
+      collapsed = !collapsed;
+      shell.setCollapsed(collapsed);
+    },
     nav: [
-      {
-        id: 'videos',
-        label: 'Videos',
-        iconName: 'film',
-        onSelect: () => renderVideoRoom(content, { client: supabase, orgId }),
-      },
       {
         id: 'athletes',
         label: 'Athletes',
         iconName: 'users',
-        onSelect: () => renderAthletes(content, { client: supabase, orgId }),
+        onSelect: () => {
+          autoSidebar(false);
+          renderAthletes(shell.content, { client: supabase, orgId });
+        },
+      },
+      {
+        id: 'videos',
+        label: 'Videos',
+        iconName: 'film',
+        onSelect: () =>
+          renderVideoRoom(shell.content, {
+            client: supabase,
+            orgId,
+            setSidebar: autoSidebar,
+          }),
       },
     ],
   });
-  mount(appRoot, root);
+  mount(appRoot, shell.root);
 
-  // Default landing surface is the Video Room (this slice's focus).
-  setActive('videos');
-  renderVideoRoom(content, { client: supabase, orgId });
+  // Default landing surface is Athletes.
+  shell.setActive('athletes');
+  renderAthletes(shell.content, { client: supabase, orgId });
 }
 
 function renderAuth() {

@@ -8,7 +8,7 @@
 //   play() / pause()
 //   seek(seconds)  absolute
 //   nudge(delta)   ±1, ±5
-//   setRate(r)     0.5 | 0.75 | 1 | 1.25 | 1.5 | 2
+//   setRate(r)     0.25 | 0.5 | 0.75 | 1 | 1.25 | 1.5 | 2
 //   time           getter, seconds (float)
 //   duration       getter, seconds
 //   on(evt, fn)    'time' | 'ready' | 'error'
@@ -17,7 +17,7 @@
 //   togglePlay(), get paused, get rate, destroy(), and the extra events
 //   'play' | 'pause' | 'ended' | 'ratechange'.
 
-export const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2];
+export const RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 
 const EVENTS = [
   'time',
@@ -43,7 +43,7 @@ function describeError(mediaError) {
     return {
       code,
       message:
-        "This browser can't play this file — the format isn't supported. Try an MP4 (H.264).",
+        "This browser can't play this file. The format isn't supported. Try an MP4 (H.264).",
     };
   }
   if (code === 2) {

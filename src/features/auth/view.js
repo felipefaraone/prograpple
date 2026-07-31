@@ -4,6 +4,20 @@
 import { el, mount } from '../../ui/dom.js';
 import { icon } from '../../ui/icons.js';
 
+// Every status/error line goes through here, so an error object can never reach
+// the DOM. A Supabase AuthError's fields are non-enumerable, so putting the object
+// in the DOM serialises to "{}" (and String() gives "[object Object]") — this
+// returns a plain string only: the message when it is a usable string, a generic
+// fallback for a real error without one, and "" (render nothing) when there is no
+// error at all.
+function statusMessage(err) {
+  if (!err) return '';
+  const msg = typeof err === 'string' ? err : err.message;
+  return typeof msg === 'string' && msg.trim()
+    ? msg
+    : 'Something went wrong, try again.';
+}
+
 export function renderSignIn({ onSendLink }) {
   const container = el('div', { class: 'signin' });
 
@@ -25,23 +39,38 @@ export function renderSignIn({ onSendLink }) {
       'Send magic link'
     );
 
+    // The single writer of the status line: always a string, hidden when empty.
+    const setStatus = (text) => {
+      error.textContent = text;
+      error.hidden = !text;
+    };
+    const resetSubmit = () => {
+      submit.disabled = false;
+      mount(submit, icon('mail'));
+      submit.append('Send magic link');
+    };
+
     const form = el(
       'form',
       {
         onsubmit: async (event) => {
           event.preventDefault();
           const email = emailInput.value.trim();
-          if (!email) return;
-          error.hidden = true;
+          if (!email) return; // nothing to send, nothing to show
+          setStatus('');
           submit.disabled = true;
           submit.textContent = 'Sending…';
-          const { error: sendError } = await onSendLink(email);
+          // onSendLink may resolve to { error } or reject outright; treat both the
+          // same and only ever show a string.
+          let sendError;
+          try {
+            ({ error: sendError } = await onSendLink(email));
+          } catch (thrown) {
+            sendError = thrown;
+          }
           if (sendError) {
-            error.textContent = sendError.message || 'Could not send the link.';
-            error.hidden = false;
-            submit.disabled = false;
-            mount(submit, icon('mail'));
-            submit.append('Send magic link');
+            setStatus(statusMessage(sendError));
+            resetSubmit();
             return;
           }
           showSent(email);

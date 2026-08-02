@@ -10,7 +10,11 @@ import { el, mount } from '../../ui/dom.js';
 import { icon } from '../../ui/icons.js';
 import { searchTaxonomy } from './taxonomy.js';
 
-export function createPalette({ onPick }) {
+// onOpen / onClose (optional) fire on the actual open/close transition only
+// (guarded by `open`), so every close path — Esc, backdrop, the close button, a
+// pick, or a caller's palette.close() — notifies exactly once. The tagger uses
+// them to auto-pause on open and resume on close.
+export function createPalette({ onPick, onOpen, onClose }) {
   let open = false;
   let results = [];
   let selected = 0;
@@ -129,12 +133,14 @@ export function createPalette({ onPick }) {
     input.value = '';
     refresh();
     input.focus();
+    onOpen?.();
   }
 
   function close() {
     if (!open) return;
     open = false;
     backdrop.remove();
+    onClose?.();
   }
 
   return {

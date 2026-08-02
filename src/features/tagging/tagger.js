@@ -142,8 +142,24 @@ export function mountTagger({
   }
 
   // --- palette + shortcuts overlay -----------------------------------------
+  // Auto-pause the video while the palette is open so a coach searching for a term
+  // is not tagging blind under moving footage; resume on close ONLY if it was
+  // playing when the palette opened (contract-only: pause()/play()/paused). The
+  // eight quick-tags never open the palette, so the hot path is untouched.
+  let paletteWasPlaying = false;
   const palette = createPalette({
     onPick: (row) => drop({ taxonomyId: row.id, result: null }),
+    onOpen: () => {
+      const player = getPlayer();
+      if (!player) return;
+      paletteWasPlaying = !player.paused; // "was it playing" via the contract
+      if (paletteWasPlaying) player.pause();
+    },
+    onClose: () => {
+      const player = getPlayer();
+      if (player && paletteWasPlaying) player.play(); // resume where it paused
+      paletteWasPlaying = false;
+    },
   });
   const overlay = createShortcutsOverlay();
   const allTagsBtn = el(

@@ -97,6 +97,7 @@ export function createTagList(
     const sideRow = el(
       'div',
       { class: 'taglist-chiprow' },
+      el('span', { class: 'taglist-filter-label', text: 'Side' }),
       chip('All', filterSide === 'all', () => setSide('all')),
       chip(sideLabel('athlete'), filterSide === 'athlete', () =>
         setSide('athlete')
@@ -113,6 +114,7 @@ export function createTagList(
       const catRow = el(
         'div',
         { class: 'taglist-chiprow' },
+        el('span', { class: 'taglist-filter-label', text: 'Category' }),
         chip('All', filterCategory === 'all', () => setCategory('all'))
       );
       for (const c of cats) {
@@ -172,7 +174,9 @@ export function createTagList(
       meta.append(el('span', { class: 'taglist-note', text: tag.note }));
 
     // "Detail" chip (revealed on hover, DESIGN §6.6) opens the inline editor for
-    // this tag. It stops propagation so the row's own click still seeks.
+    // this tag. It stops propagation so the row's own click still seeks. The label
+    // stays "Detail" and just reads active when open; closing lives in the editor
+    // footer (Cancel), so there is no loose second "Close".
     const actions = onSaveDetail
       ? el(
           'div',
@@ -183,13 +187,14 @@ export function createTagList(
               class:
                 'taglist-detail-chip' + (openTagId === tag.id ? ' on' : ''),
               type: 'button',
+              'aria-expanded': openTagId === tag.id ? 'true' : 'false',
               onclick: (e) => {
                 e.stopPropagation();
                 openTagId = openTagId === tag.id ? null : tag.id; // one at a time
                 render(tags);
               },
             },
-            openTagId === tag.id ? 'Close' : 'Detail'
+            'Detail'
           )
         )
       : null;
@@ -308,7 +313,8 @@ export function createTagList(
         el('label', { text: 'Note' }),
         noteInput
       ),
-      el('div', { class: 'taglist-editor-foot' }, cancelBtn, saveBtn, status)
+      // Status left; Cancel + Save grouped and right-aligned, Save primary.
+      el('div', { class: 'taglist-editor-foot' }, status, cancelBtn, saveBtn)
     );
   }
 
@@ -345,8 +351,12 @@ export function createTagList(
     for (const t of rows) {
       const r = rowEl(t);
       rowsById.set(t.id, { el: r, tag: t });
-      const item = el('div', { class: 'taglist-item' }, r);
-      if (onSaveDetail && openTagId === t.id) item.append(editorEl(t));
+      const isOpen = onSaveDetail && openTagId === t.id;
+      const item = el('div', {
+        class: 'taglist-item' + (isOpen ? ' open' : ''),
+      });
+      item.append(r);
+      if (isOpen) item.append(editorEl(t));
       bodyEl.append(item);
     }
   }

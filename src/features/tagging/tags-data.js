@@ -69,6 +69,30 @@ export async function insertTags(client, tags) {
   return { persistedIds, missingIds, error: null };
 }
 
+// Edit a tag's post-hoc detail (result, note). This is NOT the hot drop path: it
+// is low-frequency, so it is a plain awaited UPDATE with verify-the-write, NOT the
+// optimistic outbox (ARCHITECTURE §3.2). Scoped by org_id AND id (two locks;
+// tags_update RLS is the backstop). Verify (§10 / CONVENTIONS §10): the update
+// SELECTs the row back and a row MUST come back — an empty array with a null error
+// is the silent-no-op signature, reported as an error rather than trusted.
+// Returns { data: row|null, error }.
+export async function updateTagDetail(client, { id, orgId, result, note }) {
+  const { data, error } = await client
+    .from('tags')
+    .update({ result: result ?? null, note: note ?? null })
+    .eq('id', id)
+    .eq('org_id', orgId)
+    .select(TAG_COLS);
+  if (error) return { data: null, error };
+  if (!data || data.length === 0) {
+    return {
+      data: null,
+      error: new Error('Update matched no row — nothing was saved.'),
+    };
+  }
+  return { data: data[0], error: null };
+}
+
 // Delete a batch (§3.1: delete gets the same treatment). Deleting an id that is
 // already absent returns no rows and is also success (idempotent).
 export async function deleteTags(client, ids) {

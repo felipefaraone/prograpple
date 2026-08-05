@@ -6,9 +6,10 @@
 import { el, mount, clear, isTypingTarget } from '../../ui/dom.js';
 import { createTimeline } from '../timeline/timeline.js';
 import { createTagList } from './tag-list.js';
+import { createRollShape } from './roll-shape.js';
 import { createTagStore } from './store.js';
 import { createOutbox } from './outbox.js';
-import { fetchTagsForVideo } from './tags-data.js';
+import { fetchTagsForVideo, updateTagDetail } from './tags-data.js';
 import { resolveQuickTags } from './quick-tags.js';
 import { createPalette } from './palette.js';
 import { createShortcutsOverlay } from './shortcuts.js';
@@ -25,6 +26,7 @@ export function mountTagger({
   tagBarContainer,
   timelineContainer,
   tagListContainer,
+  rollShapeContainer,
   athleteName,
   opponentName,
 }) {
@@ -32,21 +34,44 @@ export function mountTagger({
   let side = 'athlete';
   let enabled = false; // no drops until the player has a loaded source (item 10)
 
+  // Part A: a detail edit is a plain awaited UPDATE with verify-the-write, NOT the
+  // outbox (ARCHITECTURE §3.2). On success the SAME store is patched in place so
+  // the list + timeline reflect it with no re-fetch (CONVENTIONS §9). Failure is
+  // returned to the editor to surface — never a silent revert.
+  async function saveDetail(id, { result, note }) {
+    const { error } = await updateTagDetail(client, {
+      id,
+      orgId,
+      result,
+      note,
+    });
+    if (error) return { ok: false, error };
+    store.update(id, { result, note });
+    return { ok: true };
+  }
+
   // The right-pane tag list renders from the SAME store as the timeline (one
   // source, CONVENTIONS §9). It re-renders on every tag change via onTagsChanged,
   // so an optimistically-dropped tag appears with no re-fetch.
   const tagList = tagListContainer
     ? createTagList(tagListContainer, {
         onSeek: (s) => getPlayer()?.seek(s),
+        onSaveDetail: saveDetail,
         athleteName,
         opponentName,
       })
+    : null;
+
+  // Part B: the roll-shape strip, read-only aggregate over the same store.
+  const rollShape = rollShapeContainer
+    ? createRollShape(rollShapeContainer)
     : null;
 
   // One "tags changed" handler for every consumer of the store snapshot.
   function onTagsChanged() {
     paintCounts();
     tagList?.render(store.getAll());
+    rollShape?.render(store.getAll());
   }
 
   const timeline = createTimeline(timelineContainer, {
@@ -291,6 +316,7 @@ export function mountTagger({
       outbox.drain(); // best-effort: let pending inserts/deletes finish
       clear(tagBarContainer);
       if (tagListContainer) clear(tagListContainer);
+      if (rollShapeContainer) clear(rollShapeContainer);
     },
   };
 }

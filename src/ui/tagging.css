@@ -437,3 +437,165 @@ kbd {
   font-weight: 650;
   color: var(--text-dim);
 }
+
+/* --- Part A: "Detail" chip + inline detail editor (DESIGN §6.6, §6.11) ------ */
+.taglist-actions {
+  flex: none;
+  align-self: center;
+}
+/* Outline chip, revealed on hover (or kept visible while its editor is open). */
+.taglist-detail-chip {
+  opacity: 0;
+  padding: 3px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  background: var(--panel);
+  color: var(--text-dim);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  transition:
+    opacity 0.12s,
+    background 0.12s,
+    color 0.12s;
+}
+.taglist-row:hover .taglist-detail-chip,
+.taglist-row:focus-within .taglist-detail-chip,
+.taglist-detail-chip.on {
+  opacity: 1;
+}
+.taglist-detail-chip:hover,
+.taglist-detail-chip.on {
+  background: var(--panel-2);
+  color: var(--text);
+}
+/* Editor is recessed (--panel-2, DESIGN §1.1 "editors"). */
+.taglist-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+}
+.taglist-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.taglist-field > label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+/* Fit the 4-option result segmented control into the narrow pane. */
+.taglist-result .seg-btn {
+  min-width: 0;
+  padding: 5px 6px;
+  font-size: var(--text-xs);
+}
+.taglist-note-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--panel);
+  color: var(--text);
+  font-family: var(--font-b);
+  font-size: var(--text-sm);
+  resize: vertical;
+}
+.taglist-note-input:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.taglist-editor-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.taglist-editor-foot .btn {
+  height: 30px;
+  padding: 0 12px;
+  font-size: var(--text-sm);
+}
+.taglist-save-status {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+/* Save errors are neutral-emphasised, not red (side red is only ever side, §1.3). */
+.taglist-save-status.error {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* --- Part B: roll-shape summary strip — the ONE place category hue lives (§1.4) */
+.rollshape {
+  padding: var(--space-2) 2px var(--space-3);
+}
+.rollshape[hidden] {
+  display: none;
+}
+.rollshape-title {
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.rollshape-bar {
+  display: flex;
+  height: 10px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: var(--panel-2);
+}
+.rollshape-seg {
+  min-width: 3px; /* flex-grow (share of tags) is set inline */
+}
+.rollshape-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 8px;
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+}
+.rollshape-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rollshape-sw {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+/* The eight muted category tokens are used ONLY here (DESIGN §1.4). */
+.rollshape [data-cat='position'] {
+  background: var(--c-pos);
+}
+.rollshape [data-cat='pass'] {
+  background: var(--c-pass);
+}
+.rollshape [data-cat='sweep'] {
+  background: var(--c-sweep);
+}
+.rollshape [data-cat='takedown'] {
+  background: var(--c-td);
+}
+.rollshape [data-cat='back'] {
+  background: var(--c-back);
+}
+.rollshape [data-cat='legs'] {
+  background: var(--c-legs);
+}
+.rollshape [data-cat='submission'] {
+  background: var(--c-sub);
+}
+.rollshape [data-cat='event'] {
+  background: var(--c-pts);
+}

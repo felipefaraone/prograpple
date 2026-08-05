@@ -10,6 +10,7 @@
 
 import { el, clear } from '../../ui/dom.js';
 import { fmtClock } from '../../ui/format.js';
+import { createSegmented } from '../../ui/segmented.js';
 import { allTaxonomy, categoryOf } from './taxonomy.js';
 
 // Canonical category order + display labels (the taxonomy seed's 8 categories).
@@ -41,11 +42,12 @@ const RESULT_LABEL = {
 
 export function createTagList(
   container,
-  { onSeek, athleteName, opponentName } = {}
+  { onSeek, onSaveDetail, athleteName, opponentName } = {}
 ) {
   let tags = [];
   let filterSide = 'all'; // 'all' | 'athlete' | 'opponent'
   let filterCategory = 'all'; // 'all' | <category>
+  let openTagId = null; // the one tag whose detail editor is expanded (Part A)
   let taxIndex = null;
 
   // taxonomy_id -> { term, category }, resolved from the in-memory taxonomy. Built
@@ -124,10 +126,12 @@ export function createTagList(
 
   function setSide(v) {
     filterSide = v;
+    openTagId = null; // a filter change may hide the open row
     render(tags); // client-side; no re-query
   }
   function setCategory(v) {
     filterCategory = v;
+    openTagId = null;
     render(tags); // client-side; no re-query
   }
 
@@ -167,6 +171,29 @@ export function createTagList(
     if (tag.note)
       meta.append(el('span', { class: 'taglist-note', text: tag.note }));
 
+    // "Detail" chip (revealed on hover, DESIGN §6.6) opens the inline editor for
+    // this tag. It stops propagation so the row's own click still seeks.
+    const actions = onSaveDetail
+      ? el(
+          'div',
+          { class: 'taglist-actions' },
+          el(
+            'button',
+            {
+              class:
+                'taglist-detail-chip' + (openTagId === tag.id ? ' on' : ''),
+              type: 'button',
+              onclick: (e) => {
+                e.stopPropagation();
+                openTagId = openTagId === tag.id ? null : tag.id; // one at a time
+                render(tags);
+              },
+            },
+            openTagId === tag.id ? 'Close' : 'Detail'
+          )
+        )
+      : null;
+
     return el(
       'div',
       {
@@ -193,7 +220,95 @@ export function createTagList(
         { class: 'taglist-main' },
         el('div', { class: 'taglist-label', text: term }),
         meta
-      )
+      ),
+      actions
+    );
+  }
+
+  // Inline detail editor (Part A): result segmented control + note, a plain
+  // awaited save via onSaveDetail (NOT the outbox). On failure the values are kept
+  // and the error is shown — never a silent revert.
+  function editorEl(tag) {
+    let pendingResult = tag.result || 'none';
+    const resultSeg = createSegmented({
+      ariaLabel: 'Result',
+      value: pendingResult,
+      options: [
+        { value: 'scored', label: 'Scored' },
+        { value: 'attempted', label: 'Attempted' },
+        { value: 'defended', label: 'Defended' },
+        { value: 'none', label: 'None' },
+      ],
+      onChange: (v) => {
+        pendingResult = v;
+      },
+    });
+    const noteInput = el('textarea', {
+      class: 'taglist-note-input',
+      rows: '2',
+      placeholder: 'Add a note…',
+      'aria-label': 'Note',
+    });
+    noteInput.value = tag.note || '';
+
+    const status = el('span', {
+      class: 'taglist-save-status',
+      hidden: 'hidden',
+    });
+    const saveBtn = el(
+      'button',
+      { class: 'btn primary', type: 'button' },
+      'Save'
+    );
+    const cancelBtn = el(
+      'button',
+      {
+        class: 'btn ghost',
+        type: 'button',
+        onclick: () => {
+          openTagId = null;
+          render(tags);
+        },
+      },
+      'Cancel'
+    );
+
+    saveBtn.onclick = async () => {
+      status.hidden = false;
+      status.classList.remove('error');
+      status.textContent = 'Saving…';
+      saveBtn.disabled = true;
+      const result = pendingResult === 'none' ? null : pendingResult;
+      const note = noteInput.value.trim() ? noteInput.value.trim() : null;
+      const res = await onSaveDetail(tag.id, { result, note });
+      if (res && res.ok) {
+        openTagId = null;
+        render(tags); // reflects the new badge/note; editor collapses
+      } else {
+        // Surface the failure; keep the entered values (no silent revert).
+        status.textContent =
+          res?.error?.message || 'Could not save. Try again.';
+        status.classList.add('error');
+        saveBtn.disabled = false;
+      }
+    };
+
+    return el(
+      'div',
+      { class: 'taglist-editor' },
+      el(
+        'div',
+        { class: 'taglist-field' },
+        el('label', { text: 'Result' }),
+        el('div', { class: 'taglist-result' }, resultSeg.root)
+      ),
+      el(
+        'div',
+        { class: 'taglist-field' },
+        el('label', { text: 'Note' }),
+        noteInput
+      ),
+      el('div', { class: 'taglist-editor-foot' }, cancelBtn, saveBtn, status)
     );
   }
 
@@ -230,7 +345,9 @@ export function createTagList(
     for (const t of rows) {
       const r = rowEl(t);
       rowsById.set(t.id, { el: r, tag: t });
-      bodyEl.append(r);
+      const item = el('div', { class: 'taglist-item' }, r);
+      if (onSaveDetail && openTagId === t.id) item.append(editorEl(t));
+      bodyEl.append(item);
     }
   }
 

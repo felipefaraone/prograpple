@@ -29,6 +29,15 @@ export function createTagStore() {
     remove(id) {
       tags = tags.filter((t) => t.id !== id);
     },
+    // Patch a tag's post-hoc detail (result, note) in place. Neither field affects
+    // (timestamp_seconds, id) order, so no re-sort. Mutates the existing object so
+    // every holder of the reference (timeline, list) sees the change — one source
+    // of truth (CONVENTIONS §9). Returns the updated tag, or null if not found.
+    update(id, patch) {
+      const t = tags.find((x) => x.id === id);
+      if (t) Object.assign(t, patch);
+      return t || null;
+    },
     getAll() {
       return tags;
     },

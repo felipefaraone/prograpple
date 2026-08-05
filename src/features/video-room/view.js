@@ -611,14 +611,16 @@ export function renderVideoRoom(
       tagBox
     );
 
-    // The right pane is the prototype's Tags panel: the live tag list for this
-    // video. The tagger fills tagListBox from the same in-memory store the timeline
-    // uses (detail editor + roll-shape strip are Slice 2).
+    // The right pane is the prototype's Tags panel: the roll-shape summary strip
+    // (Slice 2 Part B) over the live tag list (Slice 1 + Part A editor). The tagger
+    // fills both from the same in-memory store the timeline uses.
+    const rollShapeBox = el('div', { class: 'rollshape', hidden: 'hidden' });
     const tagListBox = el('div', { class: 'taglist' });
     const sidePane = el(
       'aside',
       { class: 'side-pane' },
       el('div', { class: 'side-head', text: 'Tags' }),
+      rollShapeBox,
       tagListBox
     );
 
@@ -675,6 +677,7 @@ export function renderVideoRoom(
       tagBarContainer: tagBox,
       timelineContainer: timelineBox,
       tagListContainer: tagListBox,
+      rollShapeContainer: rollShapeBox,
       athleteName,
       opponentName,
     });

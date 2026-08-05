@@ -119,6 +119,17 @@ export function renderAthletes(container, { client, orgId }) {
   const listBox = el('div', { class: 'listbox' });
   listBox.append(el('div', { class: 'muted', text: 'Loading…' }));
 
+  // Archiving hint is persistent chrome, but has no place in an empty view
+  // (nothing to archive yet) — hidden by paintRows when the list is empty.
+  const archNote = el(
+    'div',
+    { class: 'arch-note' },
+    icon('alert-circle', { size: 14 }),
+    el('span', {
+      text: 'Archived athletes keep their videos and tags. A referenced athlete can be archived but not deleted.',
+    })
+  );
+
   const page = el(
     'div',
     { class: 'page' },
@@ -130,14 +141,7 @@ export function renderAthletes(container, { client, orgId }) {
     controlsRow({ searchRoot: search.root, viewSegRoot: viewSeg.root }),
     typefilter,
     listBox,
-    el(
-      'div',
-      { class: 'arch-note' },
-      icon('alert-circle', { size: 14 }),
-      el('span', {
-        text: 'Archived athletes keep their videos and tags. A referenced athlete can be archived but not deleted.',
-      })
-    )
+    archNote
   );
   mount(container, page);
 
@@ -253,15 +257,18 @@ export function renderAthletes(container, { client, orgId }) {
       currentData.filter((a) => a.kind === 'opponent').length
     );
     search.setVisible(currentData.length > SEARCH_THRESHOLD);
+    archNote.hidden = currentData.length === 0;
 
     if (!currentData.length) {
+      // Active + zero athletes → a brand-new org → the first-run checklist (setup
+      // path). Archived-empty stays a plain empty state.
       listBox.replaceChildren(
-        emptyState(
-          archived ? 'Nothing archived' : 'No athletes yet',
-          archived
-            ? 'Archived athletes appear here. Nothing is lost.'
-            : 'Add your first athlete or opponent with the plus button.'
-        )
+        archived
+          ? emptyState(
+              'Nothing archived',
+              'Archived athletes appear here. Nothing is lost.'
+            )
+          : firstRunChecklist(() => openAddAthleteModal())
       );
       return;
     }
@@ -523,6 +530,68 @@ function emptyState(title, sub) {
     { class: 'empty' },
     el('div', { class: 'empty-title', text: title }),
     el('div', { text: sub })
+  );
+}
+
+// First-run checklist: zero athletes means a brand-new org (a video needs an
+// athlete pairing, so zero athletes implies zero videos), so this doubles as the
+// setup path. Step 1 is the CURRENT step (graphite badge, full-strength text, a
+// live "Add athlete" button reusing the same handler as the corner "+"); steps 2
+// and 3 are dimmed foreshadowing with outline badges and no button. No completion
+// tracking is needed — the whole state disappears once one athlete exists.
+function frStep(n, current, title, desc, onAction, actionLabel) {
+  return el(
+    'div',
+    { class: 'fr-step' + (current ? ' current' : '') },
+    el('div', { class: 'fr-badge', text: String(n) }),
+    el(
+      'div',
+      { class: 'fr-body' },
+      el('div', { class: 'fr-title', text: title }),
+      el('div', { class: 'fr-desc', text: desc }),
+      onAction
+        ? el(
+            'button',
+            { class: 'btn primary', type: 'button', onclick: onAction },
+            actionLabel
+          )
+        : null
+    )
+  );
+}
+function firstRunChecklist(onAdd) {
+  return el(
+    'div',
+    { class: 'empty firstrun' },
+    el('div', { class: 'empty-title', text: 'Set up your squad' }),
+    el('div', {
+      class: 'empty-sub',
+      text: 'Three steps from zero to your first tagged roll.',
+    }),
+    el(
+      'div',
+      { class: 'fr-steps' },
+      frStep(
+        1,
+        true,
+        'Add your athletes',
+        'Names only. Your roster and their opponents.',
+        onAdd,
+        'Add athlete'
+      ),
+      frStep(
+        2,
+        false,
+        'Load a round',
+        'A file from your disk or a direct video link.'
+      ),
+      frStep(
+        3,
+        false,
+        'Tag it live',
+        'Drop tags as the round plays. Detail comes later.'
+      )
+    )
   );
 }
 

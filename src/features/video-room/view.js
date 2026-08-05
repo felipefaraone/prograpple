@@ -115,6 +115,17 @@ export function renderVideoRoom(
     const listBox = el('div', { class: 'listbox' });
     listBox.append(el('div', { class: 'loading muted', text: 'Loading…' }));
 
+    // Archiving hint is persistent chrome, but has no place in an empty view
+    // (nothing to archive yet) — hidden by paintVideoRows when the list is empty.
+    const archNote = el(
+      'div',
+      { class: 'arch-note' },
+      icon('alert-circle', { size: 14 }),
+      el('span', {
+        text: 'Archiving hides a video from lists and keeps its tags and clips. Permanent deletion is only available from the Archived view.',
+      })
+    );
+
     mount(
       container,
       el(
@@ -127,28 +138,24 @@ export function renderVideoRoom(
         }),
         controlsRow({ searchRoot: search.root, viewSegRoot: viewSeg.root }),
         listBox,
-        el(
-          'div',
-          { class: 'arch-note' },
-          icon('alert-circle', { size: 14 }),
-          el('span', {
-            text: 'Archiving hides a video from lists and keeps its tags and clips. Permanent deletion is only available from the Archived view.',
-          })
-        )
+        archNote
       )
     );
 
     function paintVideoRows() {
       const archived = videoView === 'archived';
       search.setVisible(currentVideos.length > SEARCH_THRESHOLD);
+      archNote.hidden = currentVideos.length === 0;
       if (!currentVideos.length) {
+        // Active + zero videos → the "ghost workbench": a static illustration of
+        // what the screen becomes. Archived-empty stays a plain empty state.
         listBox.replaceChildren(
-          emptyState(
-            archived ? 'Nothing archived' : 'No videos yet',
-            archived
-              ? 'Archived videos appear here. Nothing is lost.'
-              : 'Add your first round with “New video”.'
-          )
+          archived
+            ? emptyState(
+                'Nothing archived',
+                'Archived videos appear here. Nothing is lost.'
+              )
+            : ghostWorkbench(() => openNewVideoModal())
         );
         return;
       }
@@ -834,6 +841,58 @@ function emptyState(title, sub) {
     { class: 'empty' },
     el('div', { class: 'empty-title', text: title }),
     el('div', { text: sub })
+  );
+}
+
+// The "ghost workbench" empty state: a STATIC, non-interactive illustration of the
+// screen a first video will fill (CONVENTIONS §11 "nothing scenographic" — this is
+// empty-state art, not data: a dashed stage placeholder + a faded two-lane timeline
+// preview foreshadowing the side convention, athlete above / opponent below). The
+// marks are fixed markup, not derived from any tag or state. onNewVideo reuses the
+// same handler as the corner "+".
+function ghostMark(side, left) {
+  const m = el('i', { class: `ghost-mark ${side}` });
+  m.style.left = `${left}%`;
+  return m;
+}
+function ghostWorkbench(onNewVideo) {
+  const ghost = el(
+    'div',
+    { class: 'ghost', 'aria-hidden': 'true' },
+    el('div', { class: 'ghost-stage' }, icon('play', { size: 40 })),
+    el(
+      'div',
+      { class: 'ghost-tl' },
+      el(
+        'div',
+        { class: 'ghost-lane us' },
+        ghostMark('us', 14),
+        ghostMark('us', 39),
+        ghostMark('us', 66)
+      ),
+      el(
+        'div',
+        { class: 'ghost-lane them' },
+        ghostMark('them', 24),
+        ghostMark('them', 52),
+        ghostMark('them', 81)
+      )
+    )
+  );
+  return el(
+    'div',
+    { class: 'empty ghost-empty' },
+    ghost,
+    el('div', { class: 'empty-title', text: 'Your first round goes here' }),
+    el('div', {
+      class: 'empty-sub',
+      text: "Load the footage, hit play, and drop tags as it happens. Your athlete's tags sit above the line, the opponent's below.",
+    }),
+    el(
+      'button',
+      { class: 'btn primary', type: 'button', onclick: onNewVideo },
+      'New video'
+    )
   );
 }
 

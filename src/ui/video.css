@@ -134,18 +134,27 @@
   border-right: 1px solid var(--line);
   overflow: hidden;
 }
+/* Fixed-height flex column (DESIGN §0). The pane itself does NOT scroll — its
+   control header (title, roll-shape, filters, count) is pinned and only the tag
+   list region scrolls (see .taglist / .taglist-scroll). */
 .side-pane {
   min-height: 0;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   padding: var(--space-4);
   background: var(--bg);
 }
 .side-pane .side-head {
+  flex: none;
   font-family: var(--font-d);
   font-weight: 650;
   font-size: var(--text-md);
   letter-spacing: -0.015em;
   margin-bottom: var(--space-2);
+}
+/* Roll-shape strip is part of the fixed control header — never shrinks/scrolls. */
+.side-pane .rollshape {
+  flex: none;
 }
 
 /* --- styled file picker (relink card + create form) ----------------------- */

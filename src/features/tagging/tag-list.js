@@ -66,8 +66,14 @@ export function createTagList(
   const filtersEl = el('div', { class: 'taglist-filters' });
   const countEl = el('div', { class: 'taglist-count' });
   const bodyEl = el('div', { class: 'taglist-body' });
+  // Two regions (FIX 1): a fixed control header (filters + count) and a
+  // scrollable list region (rows + inline editors). Only the scroll region
+  // scrolls; the header stays pinned. Structure only — no logic change: the same
+  // filtersEl/countEl/bodyEl are used, and rows/editors still render into bodyEl.
+  const headerEl = el('div', { class: 'taglist-header' }, filtersEl, countEl);
+  const scrollEl = el('div', { class: 'taglist-scroll' }, bodyEl);
   clear(container);
-  container.append(filtersEl, countEl, bodyEl);
+  container.append(headerEl, scrollEl);
 
   const rowsById = new Map(); // id -> { el, tag } for the currently visible rows
 

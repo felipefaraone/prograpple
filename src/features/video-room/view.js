@@ -30,10 +30,16 @@ import {
   hardDeleteVideo,
 } from './data.js';
 import { validateUrl, fingerprintMatches } from './source.js';
+import { getHandle, setHandle, deleteHandle } from '../../lib/handle-store.js';
+
+// File System Access API (Chromium desktop). Absent on Safari/Firefox/mobile,
+// where the manual <input> relink is the always-shipped fallback (§2.3).
+const supportsFsa = () => 'showOpenFilePicker' in window;
 
 // Local files picked this session, kept in memory so a just-created local video
 // plays without a relink. The blob dies on reload (§2.3) — then the relink flow
-// takes over. The showOpenFilePicker + IndexedDB enhancement is deferred (§2.3).
+// takes over, restoring from a stored FileSystemFileHandle on Chromium (see
+// handle-store.js) or the manual <input> pick everywhere else.
 const sessionFiles = new Map();
 
 // T21: one video record is one round. Nothing is blocked (there is no upload, so
@@ -709,80 +715,214 @@ export function renderVideoRoom(
       player.load(source);
     };
 
-    if (video.source_type === 'url') {
-      startPlayer({ type: 'url', url: video.source_url });
-    } else if (sessionFiles.has(video.id)) {
-      startPlayer({ type: 'local', file: sessionFiles.get(video.id) });
-    } else {
-      renderRelink(stageWrap, video, (file) => {
-        sessionFiles.set(video.id, file);
-        startPlayer({ type: 'local', file });
-      });
+    // --- open a LOCAL video: ONE place to relink with a File, whether it comes
+    //     from a stored handle (Chromium) or the <input> fallback (CONVENTIONS §9).
+    function loadFile(file) {
+      sessionFiles.set(video.id, file); // session cache; the blob dies on reload
+      startPlayer({ type: 'local', file });
     }
-  }
 
-  // The relink empty state (§2.3). Match on all three fingerprint fields; on
-  // mismatch, warn and let the coach override, never block.
-  function renderRelink(area, video, onFile) {
-    clear(area);
-    const { root: fileField, input: fileInput } = styledFileInput({
-      accept: 'video/*',
-      ariaLabel: 'Locate file',
-      label: 'Locate file…',
-    });
-    const note = el('div', { class: 'notice', hidden: 'hidden' });
-
-    fileInput.addEventListener('change', async () => {
-      const file = fileInput.files?.[0];
-      if (!file) return;
-      // If the pick can't be read, treat duration as unknown — the fingerprint
-      // then reports a length mismatch rather than throwing.
+    // The SAME verify the manual relink uses (reused, not duplicated): name AND
+    // size AND duration (±0.5s). On mismatch we warn and let the coach override.
+    async function verifyFile(file) {
       let duration;
       try {
         duration = await probeDuration({ type: 'local', file });
       } catch {
-        duration = null;
+        duration = null; // unreadable → a length mismatch, not a throw
       }
-      const match = fingerprintMatches(video, file, duration);
-      if (match.all) {
-        onFile(file);
-        return;
+      return fingerprintMatches(video, file, duration);
+    }
+
+    // Commit a chosen File: persist its handle (local videos only, keyed by id,
+    // structured-cloned into IndexedDB) then load. Called on a match OR a "Load
+    // anyway", so we only remember a file the coach actually accepted.
+    function commit(file, handle) {
+      if (handle) setHandle(video.id, handle).catch(() => {}); // best-effort
+      loadFile(file);
+    }
+
+    async function verifyAndHandle(file, handle) {
+      const match = await verifyFile(file);
+      if (match.all) commit(file, handle);
+      else showRelink({ mismatch: { match, file, handle } });
+    }
+
+    // getFile() throws if the file was moved/deleted/renamed — discard the dead
+    // handle and fall through to the manual pick. Never leave a broken player.
+    async function fileFromHandle(handle) {
+      try {
+        return await handle.getFile();
+      } catch {
+        await deleteHandle(video.id).catch(() => {});
+        return null;
       }
-      const diffs = [
-        match.nameOk ? null : 'name',
-        match.sizeOk ? null : 'size',
-        match.durationOk ? null : 'length',
-      ].filter(Boolean);
-      note.hidden = false;
-      clear(note);
-      note.classList.add('error');
-      note.append(
-        `This file doesn't match the original (${diffs.join(', ')} differ). `,
+    }
+
+    // The relink area: an optional one-click "Reload <file>" (permission 'prompt'),
+    // the pick control (showOpenFilePicker where supported → captures a handle; the
+    // <input> fallback otherwise → no handle), and a mismatch warning.
+    function showRelink({ promptHandle, mismatch } = {}) {
+      clear(stageWrap);
+      const controls = el('div', { class: 'relink-controls' });
+      const note = el('div', { class: 'notice', hidden: 'hidden' });
+
+      if (promptHandle) {
+        controls.append(
+          el(
+            'button',
+            {
+              class: 'btn',
+              type: 'button',
+              onclick: async () => {
+                // requestPermission needs a gesture — this click provides it.
+                let perm;
+                try {
+                  perm = await promptHandle.requestPermission({ mode: 'read' });
+                } catch {
+                  perm = 'denied';
+                }
+                if (perm !== 'granted') return; // manual pick stays available
+                const file = await fileFromHandle(promptHandle);
+                if (!file) {
+                  showRelink({}); // dead handle discarded → manual
+                  return;
+                }
+                verifyAndHandle(file, promptHandle);
+              },
+            },
+            `Reload “${video.file_name}”`
+          )
+        );
+      }
+
+      if (supportsFsa()) {
+        controls.append(
+          el(
+            'button',
+            {
+              class: promptHandle ? 'btn ghost' : 'btn',
+              type: 'button',
+              onclick: async () => {
+                // showOpenFilePicker needs a gesture — this click provides it.
+                let handle;
+                try {
+                  [handle] = await window.showOpenFilePicker({
+                    multiple: false,
+                    types: [
+                      {
+                        description: 'Video',
+                        accept: {
+                          'video/*': ['.mp4', '.webm', '.mov', '.m4v'],
+                        },
+                      },
+                    ],
+                  });
+                } catch {
+                  return; // cancelled/aborted
+                }
+                const file = await fileFromHandle(handle);
+                if (file) verifyAndHandle(file, handle);
+              },
+            },
+            promptHandle ? 'Choose a different file…' : 'Locate file…'
+          )
+        );
+      } else {
+        // Unsupported browsers: the existing manual <input> relink, unchanged.
+        const { root: fileField, input: fileInput } = styledFileInput({
+          accept: 'video/*',
+          ariaLabel: 'Locate file',
+          label: promptHandle ? 'Choose a different file…' : 'Locate file…',
+        });
+        fileInput.addEventListener('change', () => {
+          const file = fileInput.files?.[0];
+          if (file) verifyAndHandle(file, null); // no handle from an <input>
+        });
+        controls.append(fileField);
+      }
+
+      if (mismatch) {
+        const { match, file, handle } = mismatch;
+        const diffs = [
+          match.nameOk ? null : 'name',
+          match.sizeOk ? null : 'size',
+          match.durationOk ? null : 'length',
+        ].filter(Boolean);
+        note.hidden = false;
+        note.classList.add('error');
+        note.append(
+          `This file doesn't match the original (${diffs.join(', ')} differ). `,
+          el(
+            'button',
+            {
+              class: 'btn',
+              type: 'button',
+              onclick: () => commit(file, handle),
+            },
+            'Load anyway'
+          )
+        );
+      }
+
+      stageWrap.append(
         el(
-          'button',
-          { class: 'btn', type: 'button', onclick: () => onFile(file) },
-          'Load anyway'
+          'div',
+          { class: 'relink' },
+          el('div', { class: 'relink-icon' }, icon('film', { size: 28 })),
+          el('div', { class: 'relink-title', text: 'Locate the video file' }),
+          el('div', {
+            class: 'muted',
+            text: `Pick “${video.file_name}” to resume. Everything else is saved.`,
+          }),
+          controls,
+          note
         )
       );
-    });
+    }
 
-    area.append(
-      el(
-        'div',
-        { class: 'relink' },
-        el('div', { class: 'relink-icon' }, icon('film', { size: 28 })),
-        el('div', {
-          class: 'relink-title',
-          text: 'Locate the video file',
-        }),
-        el('div', {
-          class: 'muted',
-          text: `Pick “${video.file_name}” to resume. Everything else is saved.`,
-        }),
-        fileField,
-        note
-      )
-    );
+    // Restore-on-open for a LOCAL video with no live blob (§2.3).
+    async function openLocalVideo() {
+      if (sessionFiles.has(video.id)) {
+        loadFile(sessionFiles.get(video.id)); // already picked this session
+        return;
+      }
+      if (supportsFsa()) {
+        let handle;
+        try {
+          handle = await getHandle(video.id);
+        } catch {
+          handle = null;
+        }
+        if (handle) {
+          let perm;
+          try {
+            perm = await handle.queryPermission({ mode: 'read' });
+          } catch {
+            perm = 'denied';
+          }
+          if (perm === 'granted') {
+            const file = await fileFromHandle(handle); // no gesture needed
+            if (file) {
+              verifyAndHandle(file, handle);
+              return;
+            }
+            // dead handle discarded → fall through to the manual pick
+          } else if (perm === 'prompt') {
+            showRelink({ promptHandle: handle }); // one-click restore
+            return;
+          }
+          // 'denied' → manual pick
+        }
+      }
+      showRelink({});
+    }
+
+    if (video.source_type === 'url') {
+      startPlayer({ type: 'url', url: video.source_url });
+    } else {
+      openLocalVideo();
+    }
   }
 
   showList();

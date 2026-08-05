@@ -62,34 +62,23 @@ export function createRollShape(container) {
     }
     container.hidden = false;
 
+    // Compact strip (FIX 1): just the aggregate bar — no permanent legend row and
+    // no "ROLL SHAPE" label. Each segment carries its category + count as a hover
+    // label (native title tooltip), so the legend is on-demand, not standing chrome.
     const bar = el('div', { class: 'rollshape-bar' });
-    const legend = el('div', { class: 'rollshape-legend' });
     for (const { category, count } of counts) {
       const label = CAT_LABEL[category] || category;
       const seg = el('div', {
         class: 'rollshape-seg',
         'data-cat': category, // CSS maps data-cat -> the muted category token
-        title: `${label}: ${count}`,
+        title: `${label}: ${count}`, // category + count on hover
         'aria-label': `${label}: ${count}`,
       });
       seg.style.flexGrow = String(count); // sized by share of tags
       bar.append(seg);
-
-      legend.append(
-        el(
-          'span',
-          { class: 'rollshape-key' },
-          el('i', { class: 'rollshape-sw', 'data-cat': category }),
-          el('span', { text: `${label} ${count}` })
-        )
-      );
     }
 
-    container.append(
-      el('div', { class: 'rollshape-title', text: 'Roll shape' }),
-      bar,
-      legend
-    );
+    container.append(bar);
   }
 
   return { render };

@@ -506,6 +506,15 @@ kbd {
   box-shadow: inset 3px 0 0 var(--ink);
   border-bottom: none;
 }
+/* FIX 2 — no layout jump: pin the open row + editor to the top of the scroll
+   region (sticky within .taglist-scroll) so it stays anchored while editing and
+   the coach doesn't lose their place. Solid --panel-2 (below) covers rows that
+   scroll under it; z-index keeps it above them. */
+.taglist-item.open {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
 .taglist-editor {
   display: flex;
   flex-direction: column;
@@ -574,49 +583,25 @@ kbd {
   font-weight: 500;
 }
 
-/* --- Part B: roll-shape summary strip — the ONE place category hue lives (§1.4) */
+/* --- Part B: roll-shape summary strip — the ONE place category hue lives (§1.4).
+   Compact (FIX 1): a thin aggregate bar, tight padding, no legend row, no label.
+   Category + count show on hover (native title). Quiet summary, not a feature block. */
 .rollshape {
-  padding: var(--space-2) 2px var(--space-3);
+  padding: var(--space-1) 2px var(--space-2);
 }
 .rollshape[hidden] {
   display: none;
 }
-.rollshape-title {
-  margin-bottom: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
 .rollshape-bar {
   display: flex;
-  height: 10px;
+  height: 6px;
   border-radius: var(--r-pill);
   overflow: hidden;
   background: var(--panel-2);
 }
 .rollshape-seg {
   min-width: 3px; /* flex-grow (share of tags) is set inline */
-}
-.rollshape-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin-top: 8px;
-  font-size: var(--text-xs);
-  color: var(--text-dim);
-}
-.rollshape-key {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.rollshape-sw {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  display: inline-block;
+  cursor: help; /* hints the hover label */
 }
 /* The eight muted category tokens are used ONLY here (DESIGN §1.4). */
 .rollshape [data-cat='position'] {

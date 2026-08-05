@@ -534,7 +534,9 @@ kbd {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
-/* Cancel + Save grouped and right-aligned (Save primary); status sits at the left. */
+/* Footer = ONE right-aligned group: [status] Cancel Save, adjacent with an 8px gap
+   (Cancel ghost, Save filled primary). No margin-right:auto, nothing spread across
+   the width; the status, when shown, sits just left of Cancel inside the group. */
 .taglist-editor-foot {
   display: flex;
   align-items: center;
@@ -544,10 +546,10 @@ kbd {
 .taglist-editor-foot .btn {
   height: 30px;
   padding: 0 var(--space-3);
+  margin: 0; /* no auto-margin — the gap alone separates Cancel and Save */
   font-size: var(--text-sm);
 }
 .taglist-save-status {
-  margin-right: auto;
   font-size: var(--text-xs);
   color: var(--text-faint);
 }

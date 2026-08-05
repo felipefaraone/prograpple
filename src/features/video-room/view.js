@@ -31,6 +31,7 @@ import {
 } from './data.js';
 import { validateUrl, fingerprintMatches } from './source.js';
 import { getHandle, setHandle, deleteHandle } from '../../lib/handle-store.js';
+import { rememberVideo, forgetVideo } from '../../lib/last-video.js';
 
 // File System Access API (Chromium desktop). Absent on Safari/Firefox/mobile,
 // where the manual <input> relink is the always-shipped fallback (§2.3).
@@ -51,7 +52,7 @@ const LONG_VIDEO_SECONDS = 20 * 60;
 
 export function renderVideoRoom(
   container,
-  { client, orgId, setSidebar = () => {} }
+  { client, orgId, setSidebar = () => {}, openVideoId = null }
 ) {
   let teardownPlayer = null;
   let tagger = null;
@@ -79,9 +80,27 @@ export function renderVideoRoom(
   let goActiveList = () => {};
 
   function showList() {
+    forgetVideo(); // explicit back-to-list: a reload should stay on the list
     disposePlayer();
     setSidebar(false); // list screen → sidebar expanded (auto, unless overridden)
     buildList();
+  }
+
+  // Restore-on-reload entry (FIX 2): open a specific video by id, reusing the SAME
+  // list load and open path as clicking a row. Reuses the existing listVideos read
+  // (the room loads it anyway) — no new fetch. A missing/deleted/archived id (not
+  // in the ACTIVE list) falls back to the list cleanly and clears the stale key.
+  async function showOpenById(id) {
+    disposePlayer();
+    const { data, error } = await listVideos(client, orgId, {
+      archived: false,
+    });
+    const match = !error && data ? data.find((v) => v.id === id) : null;
+    if (match) showOpen(match);
+    else {
+      forgetVideo();
+      showList();
+    }
   }
 
   function buildList() {
@@ -588,6 +607,7 @@ export function renderVideoRoom(
   // --- open ----------------------------------------------------------------
   async function showOpen(video) {
     disposePlayer();
+    rememberVideo(video.id); // a reload returns here (FIX 2); cleared on back-to-list
     setSidebar(true); // entering the video room → auto-collapse the sidebar
     // Names come embedded on the list row; null when unset so the UI says so
     // honestly rather than inventing a name.
@@ -925,7 +945,9 @@ export function renderVideoRoom(
     }
   }
 
-  showList();
+  // Restore the last-open video on entry (FIX 2), else show the list.
+  if (openVideoId) showOpenById(openVideoId);
+  else showList();
 }
 
 // A styled file control: the raw <input type=file> is visually hidden (but still

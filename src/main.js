@@ -14,6 +14,7 @@ import { renderVideoRoom } from './features/video-room/view.js';
 import { loadTaxonomy } from './features/tagging/taxonomy.js';
 import { resolveQuickTags } from './features/tagging/quick-tags.js';
 import { getActiveOrgId, clearOrgCache } from './lib/org.js';
+import { lastVideo } from './lib/last-video.js';
 
 const appRoot = document.querySelector('#app');
 
@@ -98,9 +99,22 @@ async function renderApp(session) {
   });
   mount(appRoot, shell.root);
 
-  // Default landing surface is Athletes.
-  shell.setActive('athletes');
-  renderAthletes(shell.content, { client: supabase, orgId });
+  // Landing surface: if a video was open before a reload, restore it (FIX 2) — the
+  // video room validates the id against the active list and falls back to the list
+  // cleanly if it is stale/archived/deleted. Otherwise land on Athletes (default).
+  const restoreVideoId = lastVideo();
+  if (restoreVideoId) {
+    shell.setActive('videos');
+    renderVideoRoom(shell.content, {
+      client: supabase,
+      orgId,
+      setSidebar: autoSidebar,
+      openVideoId: restoreVideoId,
+    });
+  } else {
+    shell.setActive('athletes');
+    renderAthletes(shell.content, { client: supabase, orgId });
+  }
 }
 
 function renderAuth() {

@@ -4,8 +4,12 @@
 
 import { fetchAllPaged } from '../../lib/paged.js';
 
+// Read shape for a tag (ARCHITECTURE §4). `note` is read so the tag list can show
+// it; category/term are NOT stored here — they come from the taxonomy join in
+// memory (§4.3, no denormalised copy). Used by the read (fetchTagsForVideo); the
+// insert path upserts client-built tag objects and does not select these columns.
 export const TAG_COLS =
-  'id, org_id, video_id, timestamp_seconds, side, taxonomy_id, result';
+  'id, org_id, video_id, timestamp_seconds, side, taxonomy_id, result, note';
 
 // The ONE source function for "what are the tags of this video?" (CONVENTIONS §9),
 // through the paging helper with explicit ordering (§6.2). Used to hydrate the

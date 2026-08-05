@@ -611,16 +611,15 @@ export function renderVideoRoom(
       tagBox
     );
 
-    // The right pane is the prototype's Tags panel. Its list, detail editor and
-    // filters are the next slice; here it is the pane in its honest empty state.
+    // The right pane is the prototype's Tags panel: the live tag list for this
+    // video. The tagger fills tagListBox from the same in-memory store the timeline
+    // uses (detail editor + roll-shape strip are Slice 2).
+    const tagListBox = el('div', { class: 'taglist' });
     const sidePane = el(
       'aside',
       { class: 'side-pane' },
       el('div', { class: 'side-head', text: 'Tags' }),
-      el('div', {
-        class: 'muted',
-        text: 'Tags you drop appear on the timeline below the video. The full tag list is coming soon.',
-      })
+      tagListBox
     );
 
     // One bar: a breadcrumb "Videos / <title>" ("Videos" links back to the list),
@@ -675,6 +674,7 @@ export function renderVideoRoom(
       getPlayer: () => player,
       tagBarContainer: tagBox,
       timelineContainer: timelineBox,
+      tagListContainer: tagListBox,
       athleteName,
       opponentName,
     });

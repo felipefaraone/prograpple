@@ -5,6 +5,7 @@
 
 import { el, mount, clear, isTypingTarget } from '../../ui/dom.js';
 import { createTimeline } from '../timeline/timeline.js';
+import { createTagList } from './tag-list.js';
 import { createTagStore } from './store.js';
 import { createOutbox } from './outbox.js';
 import { fetchTagsForVideo } from './tags-data.js';
@@ -23,6 +24,7 @@ export function mountTagger({
   getPlayer,
   tagBarContainer,
   timelineContainer,
+  tagListContainer,
   athleteName,
   opponentName,
 }) {
@@ -30,10 +32,27 @@ export function mountTagger({
   let side = 'athlete';
   let enabled = false; // no drops until the player has a loaded source (item 10)
 
+  // The right-pane tag list renders from the SAME store as the timeline (one
+  // source, CONVENTIONS §9). It re-renders on every tag change via onTagsChanged,
+  // so an optimistically-dropped tag appears with no re-fetch.
+  const tagList = tagListContainer
+    ? createTagList(tagListContainer, {
+        onSeek: (s) => getPlayer()?.seek(s),
+        athleteName,
+        opponentName,
+      })
+    : null;
+
+  // One "tags changed" handler for every consumer of the store snapshot.
+  function onTagsChanged() {
+    paintCounts();
+    tagList?.render(store.getAll());
+  }
+
   const timeline = createTimeline(timelineContainer, {
     onSeek: (s) => getPlayer()?.seek(s),
     onDelete: (tag) => removeTag(tag),
-    onChange: paintCounts, // live side counts, without touching the write path
+    onChange: onTagsChanged, // live side counts + tag list, off the same store
     athleteName,
     opponentName,
   });
@@ -256,6 +275,7 @@ export function mountTagger({
     },
     setPlayhead(seconds) {
       timeline.setPlayhead(seconds);
+      tagList?.setCurrent(seconds); // same playhead the timeline uses
     },
     // Enable/disable dropping based on whether the player has a loaded source
     // (item 10): no source → controls unavailable, so no timestamp-0 tag.
@@ -270,6 +290,7 @@ export function mountTagger({
       overlay.destroy();
       outbox.drain(); // best-effort: let pending inserts/deletes finish
       clear(tagBarContainer);
+      if (tagListContainer) clear(tagListContainer);
     },
   };
 }

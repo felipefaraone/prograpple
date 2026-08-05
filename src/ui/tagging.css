@@ -284,3 +284,156 @@ kbd {
   color: var(--text-faint);
   text-align: right;
 }
+
+/* --- tag list (right pane, DESIGN §6.6) — tokens only, category is text ----- */
+.taglist {
+  display: flex;
+  flex-direction: column;
+}
+/* Filters stay visible while the list scrolls inside the side pane. */
+.taglist-filters {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: var(--space-2);
+  background: var(--bg);
+}
+.taglist-chiprow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+/* Filter chips: neutral; active = graphite fill, white text (DESIGN §1.4). */
+.taglist-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  background: var(--panel);
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+.taglist-chip:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+.taglist-chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--panel);
+}
+.taglist-count {
+  padding: var(--space-2) 2px var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+/* Row: mono time (42px) → 4px side bar → label + text meta (DESIGN §6.6). */
+.taglist-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.taglist-row:last-child {
+  border-bottom: none;
+}
+.taglist-row:hover {
+  background: var(--panel-2);
+}
+/* Current row: --ink-soft fill + 3px graphite inset bar (DESIGN §6.6). */
+.taglist-row.current {
+  background: var(--ink-soft);
+  box-shadow: inset 3px 0 0 var(--ink);
+}
+.taglist-time {
+  flex: none;
+  width: 42px;
+  padding-top: 1px;
+  font-family: var(--font-m);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+}
+.taglist-bar {
+  flex: none;
+  width: 4px;
+  align-self: stretch;
+  border-radius: 2px;
+}
+.taglist-bar.us {
+  background: var(--us);
+}
+.taglist-bar.them {
+  background: var(--them);
+}
+.taglist-main {
+  flex: 1;
+  min-width: 0;
+}
+.taglist-label {
+  font-size: var(--text-base);
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+/* Meta line is TEXT (category name · badge · italic note); no category colour dot. */
+.taglist-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+}
+.taglist-note {
+  font-style: italic;
+}
+
+/* Result badge (DESIGN §1.5): green for scored, neutral otherwise. */
+.res-badge {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px solid;
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.res-scored {
+  color: var(--res-scored-text);
+  border-color: var(--res-scored-border);
+  background: var(--res-scored-fill);
+}
+.res-neutral {
+  color: var(--text-dim);
+  border-color: var(--line-2);
+  background: var(--panel-2);
+}
+
+/* Empty state (DESIGN §6.10). */
+.taglist-empty {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.taglist-empty-title {
+  margin-bottom: 4px;
+  font-family: var(--font-d);
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--text-dim);
+}

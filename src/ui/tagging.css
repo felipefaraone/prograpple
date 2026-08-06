@@ -82,17 +82,26 @@
 .side-btn.opponent .side-dot {
   background: var(--them);
 }
+/* Active side = a filled button showing whose tags you are dropping. Your athlete's
+   side fills confident blue with white text; the opponent's side uses a red TINT (not
+   a solid red button) so the "them" state reads clearly without shouting. The shadow
+   lifts the active tile off the track (§6.4) so even the light tint reads as filled. */
 .side-btn.on {
-  color: var(--panel);
+  box-shadow: var(--shadow-sm);
 }
 .side-btn.athlete.on {
   background: var(--us);
+  color: var(--panel);
+}
+.side-btn.athlete.on .side-dot {
+  background: var(--panel);
 }
 .side-btn.opponent.on {
-  background: var(--them);
+  background: var(--them-soft);
+  color: var(--them);
 }
-.side-btn.on .side-dot {
-  background: var(--panel);
+.side-btn.opponent.on .side-dot {
+  background: var(--them);
 }
 .side-btn .side-count {
   flex: none; /* count always visible, never truncated */
@@ -297,8 +306,15 @@ kbd {
   flex-direction: column;
 }
 /* Fixed control header (filters + count); part of the pinned control surface. */
+/* Control header (Part B): strip (category filter) → side segmented → count, pinned
+   above the scroll region. No uppercase filter labels — the controls speak for
+   themselves. */
 .taglist-header {
   flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
 }
 /* The ONE scroll region: the tag rows + their inline editors (FIX 1). min-height:0
    is what lets a flex child actually scroll; the hairline divides it from the fixed
@@ -310,44 +326,49 @@ kbd {
   padding-bottom: var(--space-4);
   border-top: 1px solid var(--line);
 }
-.taglist-filters {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-bottom: var(--space-2);
+/* Side filter as a segmented control (§6.11): full width, segments share it evenly
+   and shrink rather than overflow a narrow pane. */
+.taglist-side-seg {
+  width: 100%;
 }
-.taglist-chiprow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.taglist-side-seg .seg-btn {
+  min-width: 0;
+  padding: 5px 8px;
+  overflow: hidden;
 }
-/* Filter chips: neutral; active = graphite fill, white text (DESIGN §1.4). */
-.taglist-chip {
-  padding: 4px 10px;
-  border: 1px solid var(--line-2);
-  border-radius: var(--r-pill);
-  background: var(--panel);
-  color: var(--text-dim);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  transition:
-    background 0.12s,
-    color 0.12s,
-    border-color 0.12s;
-}
-.taglist-chip:hover {
-  background: var(--panel-2);
-  color: var(--text);
-}
-.taglist-chip.on {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--panel);
-}
+/* Count line: "N tags" at rest; "M of N" + a graphite clear chip when filtered. The
+   chip is graphite (§1.4 — never category-coloured); its × clears the filter. */
 .taglist-count {
-  padding: var(--space-2) 2px var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 2px;
   font-size: var(--text-xs);
   color: var(--text-faint);
+}
+.taglist-count-n {
+  font-variant-numeric: tabular-nums;
+}
+.taglist-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 9px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--panel);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.taglist-clear:hover {
+  opacity: 0.88;
+}
+.taglist-clear-x {
+  font-size: 13px;
+  line-height: 1;
 }
 
 /* Row: mono time (42px) → 4px side bar → label + text meta (DESIGN §6.6). */
@@ -452,17 +473,6 @@ kbd {
   font-size: 15px;
   font-weight: 650;
   color: var(--text-dim);
-}
-
-/* --- filter row micro-labels (DESIGN §2 label tier) ------------------------ */
-.taglist-filter-label {
-  align-self: center;
-  margin-right: var(--space-1);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-faint);
 }
 
 /* --- Part A: "Detail" chip + inline detail editor (DESIGN §6.6, §6.11) ------ */
@@ -586,22 +596,50 @@ kbd {
 /* --- Part B: roll-shape summary strip — the ONE place category hue lives (§1.4).
    Compact (FIX 1): a thin aggregate bar, tight padding, no legend row, no label.
    Category + count show on hover (native title). Quiet summary, not a feature block. */
+/* The roll-shape strip IS the category filter (Part B). Taller than the old passive
+   strip so each segment can carry its category label and be a comfortable click
+   target; still the ONE place category hue lives (§1.4, amended). */
 .rollshape {
-  padding: var(--space-1) 2px var(--space-2);
+  padding: var(--space-1) 2px var(--space-1);
 }
 .rollshape[hidden] {
   display: none;
 }
 .rollshape-bar {
   display: flex;
-  height: 6px;
-  border-radius: var(--r-pill);
+  height: 24px;
+  border-radius: var(--r);
   overflow: hidden;
   background: var(--panel-2);
 }
 .rollshape-seg {
-  min-width: 3px; /* flex-grow (share of tags) is set inline */
-  cursor: help; /* hints the hover label */
+  min-width: 10px; /* flex-grow (share of tags) is set inline; stays clickable */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border: none;
+  overflow: hidden;
+  cursor: pointer;
+  transition: opacity 0.14s var(--ease);
+}
+.rollshape-seg-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--panel);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Active category: the picked segment stays full; every other segment dims, so the
+   filter is unmistakable. At rest (no filter) nothing is dimmed. */
+.rollshape-seg.dim {
+  opacity: 0.28;
+}
+.rollshape-hint {
+  padding: 4px 2px 0;
+  font-size: var(--text-xs);
+  color: var(--text-faint);
 }
 /* The eight muted category tokens are used ONLY here (DESIGN §1.4). */
 .rollshape [data-cat='position'] {

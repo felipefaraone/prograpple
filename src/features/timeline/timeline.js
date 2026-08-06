@@ -11,7 +11,8 @@
 //   where the coach works during a scramble. No new gesture: it just follows.
 //
 // Both bands keep the two lanes, the lane tints, the side colours and the
-// playhead; the legend names the lanes. The public API (setDuration / setPlayhead
+// playhead. The lane tints plus the pairing in the room header name the lanes, so
+// there is no separate legend line. The public API (setDuration / setPlayhead
 // / render / addMarker) is unchanged, so the tagging controller is untouched.
 
 import { el, clear } from '../../ui/dom.js';
@@ -35,10 +36,7 @@ function sideKeyOf(tag) {
   return tag.side === 'opponent' ? 'opponent' : 'athlete';
 }
 
-export function createTimeline(
-  container,
-  { onSeek, onDelete, onChange, athleteName, opponentName } = {}
-) {
+export function createTimeline(container, { onSeek, onDelete, onChange } = {}) {
   // --- overview band --------------------------------------------------------
   const ovBuffer = el('div', { class: 'tl-buffer' });
   const ovMarkers = el('div', { class: 'tl-markers' });
@@ -65,25 +63,6 @@ export function createTimeline(
     el('div', { class: 'tl-track' }),
     detMarkers,
     detPlayhead
-  );
-
-  const legend = el(
-    'div',
-    { class: 'tl-legend' },
-    el(
-      'span',
-      {},
-      el('i', { class: 'lane-us' }),
-      el('span', { class: 'lane-name', text: athleteName || 'Athlete' }),
-      el('span', { class: 'lane-tag', text: 'top lane' })
-    ),
-    el(
-      'span',
-      {},
-      el('i', { class: 'lane-them' }),
-      el('span', { class: 'lane-name', text: opponentName || 'Opponent' }),
-      el('span', { class: 'lane-tag', text: 'bottom lane' })
-    )
   );
 
   // Focus-window (the "this is a zoom of the marked region" pattern): a translucent
@@ -125,7 +104,7 @@ export function createTimeline(
   );
 
   clear(container);
-  container.append(el('div', { class: 'tl-wrap' }, bands), legend);
+  container.append(el('div', { class: 'tl-wrap' }, bands));
 
   let span = null; // duration in seconds
   let playheadSec = 0;

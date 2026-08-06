@@ -6,24 +6,19 @@
 // over the loaded tags (no re-query). Clicking a row seeks via the injected
 // onSeek (the §2.4 player contract).
 //
-// Out of scope for this slice (Slice 2): editing result/note, the roll-shape strip.
+// This module owns the whole tag pane header: the roll-shape strip (now the category
+// filter — DESIGN §1.4, amended), the side segmented filter, and the count. The strip
+// is the ONE place category hue is allowed; the side/count are neutral + side colour.
 
 import { el, clear } from '../../ui/dom.js';
 import { fmtClock } from '../../ui/format.js';
 import { createSegmented } from '../../ui/segmented.js';
 import { allTaxonomy, categoryOf } from './taxonomy.js';
+import { categoryCounts } from './roll-shape.js';
 
-// Canonical category order + display labels (the taxonomy seed's 8 categories).
-const CAT_ORDER = [
-  'position',
-  'pass',
-  'sweep',
-  'takedown',
-  'back',
-  'legs',
-  'submission',
-  'event',
-];
+// Category display labels (the taxonomy seed's 8 categories). The canonical ORDER
+// lives with categoryCounts() in roll-shape.js — the strip iterates that aggregate,
+// so the list never re-derives the order.
 const CAT_LABEL = {
   position: 'Position',
   pass: 'Pass',
@@ -63,73 +58,100 @@ export function createTagList(
     };
   }
 
-  const filtersEl = el('div', { class: 'taglist-filters' });
+  const sideLabel = (side) =>
+    side === 'opponent' ? opponentName || 'Opponent' : athleteName || 'Athlete';
+
+  // The fixed control header (Part B): the roll-shape strip IS the category filter,
+  // over a side segmented control, over the count. The three uppercase filter labels
+  // are gone — the strip's own segment labels, the side names + dots, and the count
+  // say what they are. Only the scroll region below scrolls; this header stays pinned.
+  const stripEl = el('div', { class: 'rollshape' }); // category filter (the strip)
+  const dot = (cls) => el('span', { class: `seg-sq ${cls}` });
+  // Side filter as a segmented control (§6.11), built ONCE so its indicator animates
+  // (never rebuilt on refresh). Side dots are side colour (allowed) — never category.
+  const sideSeg = createSegmented({
+    ariaLabel: 'Filter by side',
+    value: filterSide,
+    options: [
+      { value: 'all', label: 'All' },
+      {
+        value: 'athlete',
+        node: el('span', { class: 'seg-lbl' }, dot('us'), sideLabel('athlete')),
+      },
+      {
+        value: 'opponent',
+        node: el(
+          'span',
+          { class: 'seg-lbl' },
+          dot('them'),
+          sideLabel('opponent')
+        ),
+      },
+    ],
+    onChange: (v) => setSide(v),
+  });
+  sideSeg.root.classList.add('taglist-side-seg');
   const countEl = el('div', { class: 'taglist-count' });
   const bodyEl = el('div', { class: 'taglist-body' });
-  // Two regions (FIX 1): a fixed control header (filters + count) and a
-  // scrollable list region (rows + inline editors). Only the scroll region
-  // scrolls; the header stays pinned. Structure only — no logic change: the same
-  // filtersEl/countEl/bodyEl are used, and rows/editors still render into bodyEl.
-  const headerEl = el('div', { class: 'taglist-header' }, filtersEl, countEl);
+  const headerEl = el(
+    'div',
+    { class: 'taglist-header' },
+    stripEl,
+    sideSeg.root,
+    countEl
+  );
   const scrollEl = el('div', { class: 'taglist-scroll' }, bodyEl);
   clear(container);
   container.append(headerEl, scrollEl);
 
   const rowsById = new Map(); // id -> { el, tag } for the currently visible rows
 
-  const sideLabel = (side) =>
-    side === 'opponent' ? opponentName || 'Opponent' : athleteName || 'Athlete';
-
-  function presentCategories() {
-    const set = new Set();
-    for (const t of tags) set.add(taxOf(t.taxonomy_id).category);
-    return CAT_ORDER.filter((c) => set.has(c));
-  }
-
-  function chip(label, active, onClick) {
-    return el(
-      'button',
-      {
-        class: 'taglist-chip' + (active ? ' on' : ''),
-        type: 'button',
-        onclick: onClick,
-      },
-      label
-    );
-  }
-
-  function renderFilters() {
-    clear(filtersEl);
-    const sideRow = el(
-      'div',
-      { class: 'taglist-chiprow' },
-      el('span', { class: 'taglist-filter-label', text: 'Side' }),
-      chip('All', filterSide === 'all', () => setSide('all')),
-      chip(sideLabel('athlete'), filterSide === 'athlete', () =>
-        setSide('athlete')
-      ),
-      chip(sideLabel('opponent'), filterSide === 'opponent', () =>
-        setSide('opponent')
-      )
-    );
-    filtersEl.append(sideRow);
-
-    // Only categories that actually have tags in THIS video.
-    const cats = presentCategories();
-    if (cats.length) {
-      const catRow = el(
-        'div',
-        { class: 'taglist-chiprow' },
-        el('span', { class: 'taglist-filter-label', text: 'Category' }),
-        chip('All', filterCategory === 'all', () => setCategory('all'))
-      );
-      for (const c of cats) {
-        catRow.append(
-          chip(CAT_LABEL[c] || c, filterCategory === c, () => setCategory(c))
-        );
-      }
-      filtersEl.append(catRow);
+  // The roll-shape strip, painted as the category filter. Segments are the one
+  // aggregate (categoryCounts, CONVENTIONS §9) sized by share of tags; clicking a
+  // segment filters the list to that category, clicking the active one clears it —
+  // the SAME client-side filterCategory logic the chip row drove before, no re-query.
+  // The active segment stays full; the rest dim, so the filter is unmistakable.
+  function buildStrip() {
+    clear(stripEl);
+    const counts = categoryCounts(tags);
+    const total = counts.reduce((sum, c) => sum + c.count, 0);
+    if (!total) {
+      stripEl.hidden = true; // no tags → no strip (mark the exception; §11)
+      return;
     }
+    stripEl.hidden = false;
+    const bar = el('div', { class: 'rollshape-bar' });
+    for (const { category, count } of counts) {
+      const label = CAT_LABEL[category] || category;
+      const isActive = filterCategory === category;
+      const isDim = filterCategory !== 'all' && !isActive;
+      const seg = el(
+        'button',
+        {
+          class:
+            'rollshape-seg' +
+            (isActive ? ' active' : '') +
+            (isDim ? ' dim' : ''),
+          type: 'button',
+          'data-cat': category, // CSS maps data-cat -> the muted category token
+          title: `${label}: ${count}`, // full name + count on hover
+          'aria-label': `Filter by ${label} (${count})`,
+          'aria-pressed': isActive ? 'true' : 'false',
+          onclick: () => setCategory(isActive ? 'all' : category),
+        },
+        el('span', { class: 'rollshape-seg-label', text: label })
+      );
+      seg.style.flexGrow = String(count); // sized by share of tags
+      bar.append(seg);
+    }
+    const hint = el('div', {
+      class: 'rollshape-hint',
+      text:
+        filterCategory === 'all'
+          ? 'Click a segment to filter'
+          : 'Click again to clear',
+    });
+    stripEl.append(bar, hint);
   }
 
   function setSide(v) {
@@ -326,9 +348,45 @@ export function createTagList(
 
   function render(next) {
     tags = next || [];
-    renderFilters();
+    buildStrip();
+    sideSeg.setValue(filterSide); // reflect state; no fromClick → no onChange loop
+
     const rows = visible();
-    countEl.textContent = `${rows.length} ${rows.length === 1 ? 'tag' : 'tags'}`;
+    // Count: "N tags" at rest; "M of N" once a category is picked, with a graphite
+    // chip (§1.4 — never category-coloured) naming it and an × that clears the filter
+    // (same as clicking the active segment again). N is the side-filtered total the
+    // category narrows, so "3 of 12" reads as "3 in this category, of 12 on this side".
+    clear(countEl);
+    if (filterCategory === 'all') {
+      countEl.textContent = `${rows.length} ${rows.length === 1 ? 'tag' : 'tags'}`;
+    } else {
+      const sideTotal = tags.filter(
+        (t) => filterSide === 'all' || t.side === filterSide
+      ).length;
+      const label = CAT_LABEL[filterCategory] || filterCategory;
+      countEl.append(
+        el('span', {
+          class: 'taglist-count-n',
+          text: `${rows.length} of ${sideTotal}`,
+        }),
+        el(
+          'button',
+          {
+            class: 'taglist-clear',
+            type: 'button',
+            title: 'Clear filter',
+            'aria-label': `Clear ${label} filter`,
+            onclick: () => setCategory('all'),
+          },
+          el('span', { text: label }),
+          el('span', {
+            class: 'taglist-clear-x',
+            'aria-hidden': 'true',
+            text: '×',
+          })
+        )
+      );
+    }
 
     clear(bodyEl);
     rowsById.clear();

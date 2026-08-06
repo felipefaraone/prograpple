@@ -9,6 +9,7 @@
 
 import { el } from '../ui/dom.js';
 import { icon } from '../ui/icons.js';
+import { createSegmented } from '../ui/segmented.js';
 import { RATES } from './player.js';
 
 function formatTime(seconds) {
@@ -165,26 +166,20 @@ export function mountControls({ player, container }) {
       label
     );
 
-  const speedGroup = el('div', {
-    class: 'speed-group',
-    role: 'group',
-    'aria-label': 'Speed',
+  // Speed set as ONE compact segmented control (DESIGN §6.11) — the same sliding
+  // control the side/result filters use, so all seven rates read as one instrument
+  // rather than a row of floating buttons. Behaviour is unchanged: a click sets the
+  // rate through the contract; the 'ratechange' event syncs the active segment (so a
+  // rate set elsewhere still moves the indicator). setValue with no fromClick never
+  // re-fires onChange, so there is no feedback loop.
+  const speedSeg = createSegmented({
+    ariaLabel: 'Speed',
+    value: String(player.rate),
+    options: RATES.map((r) => ({ value: String(r), label: `${r}×` })),
+    onChange: (v) => player.setRate(Number(v)),
   });
-  const speedButtons = RATES.map((r) => {
-    const btn = el(
-      'button',
-      { class: 'speed', type: 'button', onclick: () => player.setRate(r) },
-      `${r}×`
-    );
-    btn.dataset.rate = String(r);
-    speedGroup.append(btn);
-    return btn;
-  });
-  const paintSpeed = () => {
-    for (const btn of speedButtons) {
-      btn.classList.toggle('on', Number(btn.dataset.rate) === player.rate);
-    }
-  };
+  speedSeg.root.classList.add('speed-seg');
+  const paintSpeed = () => speedSeg.setValue(String(player.rate));
 
   const bar = el(
     'div',
@@ -196,7 +191,7 @@ export function mountControls({ player, container }) {
     nudge(5, '+5s', 'Forward 5s (L)'),
     scrub,
     timeLabel,
-    speedGroup
+    speedSeg.root
   );
   container.append(bar);
 

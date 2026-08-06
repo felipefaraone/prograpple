@@ -6,7 +6,6 @@
 import { el, mount, clear, isTypingTarget } from '../../ui/dom.js';
 import { createTimeline } from '../timeline/timeline.js';
 import { createTagList } from './tag-list.js';
-import { createRollShape } from './roll-shape.js';
 import { createTagStore } from './store.js';
 import { createOutbox } from './outbox.js';
 import { fetchTagsForVideo, updateTagDetail } from './tags-data.js';
@@ -26,7 +25,6 @@ export function mountTagger({
   tagBarContainer,
   timelineContainer,
   tagListContainer,
-  rollShapeContainer,
   athleteName,
   opponentName,
 }) {
@@ -62,16 +60,12 @@ export function mountTagger({
       })
     : null;
 
-  // Part B: the roll-shape strip, read-only aggregate over the same store.
-  const rollShape = rollShapeContainer
-    ? createRollShape(rollShapeContainer)
-    : null;
-
-  // One "tags changed" handler for every consumer of the store snapshot.
+  // One "tags changed" handler for every consumer of the store snapshot. The tag
+  // list owns the roll-shape strip (now the category filter, Part B), so it repaints
+  // it from this same store — no separate strip consumer.
   function onTagsChanged() {
     paintCounts();
     tagList?.render(store.getAll());
-    rollShape?.render(store.getAll());
   }
 
   const timeline = createTimeline(timelineContainer, {
@@ -231,7 +225,12 @@ export function mountTagger({
   }
 
   // --- assemble the tag bar ------------------------------------------------
+  // The side toggle sits as its own block directly above the quick-tag chips, so a
+  // coach sees whose side they are tagging and the chips they feed in one glance
+  // (§6.4). "All tags (T)" folds in at the end of the chip row — it is another way
+  // to drop a tag, so it belongs with the chips, not up on the side row.
   const hint = el('div', { class: 'muted tag-hint', text: DISABLED_HINT });
+  quickRow.append(allTagsBtn);
   const tagBar = el(
     'div',
     { class: 'tag-bar is-disabled' },
@@ -239,7 +238,6 @@ export function mountTagger({
       'div',
       { class: 'tag-bar-top' },
       sideToggle,
-      allTagsBtn,
       el('span', { class: 'spacer' }),
       unsaved
     ),
@@ -316,7 +314,6 @@ export function mountTagger({
       outbox.drain(); // best-effort: let pending inserts/deletes finish
       clear(tagBarContainer);
       if (tagListContainer) clear(tagListContainer);
-      if (rollShapeContainer) clear(rollShapeContainer);
     },
   };
 }

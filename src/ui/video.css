@@ -351,36 +351,29 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.speed-group {
-  display: flex;
-  border: 1px solid var(--line-2);
-  border-radius: var(--r);
-  overflow: hidden;
-  background: var(--panel);
-  box-shadow: var(--shadow-sm);
+/* Speed as a compact segmented control (§6.11) sharing the app's .seg pattern.
+   The base .seg-btn min-width (92px) is meant for the wider filter labels; here the
+   seven rates must fit on the transport row, so segments shrink to their content and
+   use the mono face at the micro size. The active rate is the .seg indicator (a
+   graphite-shadowed panel tile), consistent with every other segmented control. */
+.speed-seg {
+  flex: none;
 }
-.speed-group .speed {
-  height: 32px;
-  padding: 0 var(--space-2);
+.speed-seg .seg-btn {
+  min-width: 0;
+  padding: 3px var(--space-2);
   font-family: var(--font-m);
   font-size: var(--text-xs);
-  color: var(--text-faint);
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--line);
-  transition:
-    background 0.12s,
-    color 0.12s;
 }
-.speed-group .speed:last-child {
-  border-right: none;
-}
-.speed-group .speed:hover {
-  color: var(--text);
-}
-/* Active speed step = graphite fill (§1.2). */
-.speed-group .speed.on {
+/* Active rate is a graphite-filled segment (§1.2), so the sliding indicator is
+   graphite here and the active label flips to white — the rest of the .seg pattern
+   (track, animation, sizing) is inherited unchanged. */
+.speed-seg .seg-indicator {
   background: var(--ink);
+  box-shadow: none;
+}
+.speed-seg .seg-btn.on,
+.speed-seg .seg-btn.on:hover {
   color: var(--panel);
 }
 
@@ -430,7 +423,7 @@
    Position is data, never nudged: the overview clusters overlapping markers, the
    detail band's 20s window separates them (DESIGN §6.5). */
 .timeline-box {
-  /* spacing comes from .tl-wrap / .tl-legend below */
+  /* spacing comes from .tl-wrap below */
 }
 .tl-wrap {
   padding: 12px 18px 2px;
@@ -672,31 +665,4 @@
   display: none;
   pointer-events: none;
   box-shadow: var(--shadow-sm);
-}
-.tl-legend {
-  display: flex;
-  gap: 16px;
-  padding: 2px 18px 0;
-  font-size: var(--text-xs);
-  color: var(--text-faint);
-}
-.tl-legend span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.tl-legend i {
-  width: 8px;
-  height: 8px;
-  border-radius: 3px;
-  display: block;
-}
-.tl-legend i.lane-us {
-  background: var(--us);
-}
-.tl-legend i.lane-them {
-  background: var(--them);
-}
-.tl-legend .lane-tag {
-  color: var(--text-faint);
 }

@@ -92,13 +92,12 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-/* Quick-tag chips restored to their pre-redesign size, verbatim from commit 637f63e
-   (padding var(--space-2) var(--space-4); gap var(--space-2)). */
+/* Compact quick-tag chips — same small size as the app's other chips (~24px tall). */
 .quick-chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  gap: 6px;
+  padding: 4px 10px;
   border: 1px solid var(--line);
   border-radius: var(--r-pill);
   background: var(--panel);
@@ -118,6 +117,14 @@
 }
 .quick-chip:active {
   transform: scale(0.93);
+}
+/* "All tags (T)" shares the row — match the compact chip height so it does not tower
+   over them. */
+.quick-row .all-tags {
+  height: auto;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--text-sm);
 }
 /* Quick-tag chips are text-only in v2.0 (§1.4/§6.3) — the label is the info; no dot. */
 

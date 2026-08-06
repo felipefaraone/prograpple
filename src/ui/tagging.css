@@ -20,8 +20,11 @@
   align-items: center;
   gap: var(--space-3);
 }
+/* The side control now fills the row (FIX 1: flex:1), so the old right-aligning
+   spacer is obsolete — the flex control positions the (rare) unsaved badge at the
+   right on its own. */
 .tag-bar-top .spacer {
-  flex: 1;
+  display: none;
 }
 .tag-hint {
   font-size: var(--text-xs);
@@ -35,11 +38,12 @@
    data-active-side (the indicator sits before the buttons, so it cannot be selected
    from the .on button in CSS). */
 .side-seg {
-  width: 300px;
-  max-width: 100%;
+  flex: 1; /* fill the full width of the row / left column (FIX 1) */
+  min-width: 0;
 }
 .side-seg .seg-btn {
-  min-width: 0; /* two equal halves regardless of name length */
+  flex: 1 1 0; /* EXACT equal halves — segments never size to their content */
+  min-width: 0;
   gap: var(--space-2);
 }
 .side-seg[data-active-side='athlete'] .seg-indicator {
@@ -88,13 +92,13 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-/* Compact quick-action chips (FIX 3): a dense row, not big buttons — tighter
-   padding/gap on the 4px grid (§3), same pill look. */
+/* Quick-tag chips restored to their pre-redesign size, verbatim from commit 637f63e
+   (padding var(--space-2) var(--space-4); gap var(--space-2)). */
 .quick-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: var(--space-1) var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--r-pill);
   background: var(--panel);
@@ -114,14 +118,6 @@
 }
 .quick-chip:active {
   transform: scale(0.93);
-}
-/* "All tags (T)" sits in the same dense row — shrink the shared .btn to the chip's
-   compact height and pill shape so the row reads as one set (FIX 3). */
-.quick-row .all-tags {
-  height: auto;
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--r-pill);
-  font-size: var(--text-sm);
 }
 /* Quick-tag chips are text-only in v2.0 (§1.4/§6.3) — the label is the info; no dot. */
 

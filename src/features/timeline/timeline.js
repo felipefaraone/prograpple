@@ -316,11 +316,47 @@ export function createTimeline(container, { onSeek, onDelete, onChange } = {}) {
     }
   }
 
-  // Overview: click empty track to seek; hover shows a time pill. (Unchanged — the
-  // scrub/seek handlers are left exactly as they were; only cluster hover was added.)
-  ovBand.addEventListener('click', (event) => {
-    if (event.target.closest('.tl-marker')) return;
+  // Overview scrub (FIX 1): the overview band IS the scrubber now. This is the SAME
+  // pointer-binding the removed transport scrubber used — press seeks immediately,
+  // then a WINDOW-bound pointermove/up (plus pointer capture) carries the drag so a
+  // move is never dropped. Only the seek target moved: it uses the overview's own
+  // pctFromEvent + onSeek instead of painting a knob. The pointer mechanics were not
+  // rewritten. Marks and cluster badges take precedence (a pointerdown on one is its
+  // own action — click-to-seek / open popover — never a scrub of the band).
+  let scrubbing = false;
+  const seekFromEvent = (event) => {
     if (span) onSeek?.(pctFromEvent(ovBand, event) * span);
+  };
+  const onMove = (event) => {
+    if (scrubbing) seekFromEvent(event);
+  };
+  const endScrub = (event) => {
+    if (!scrubbing) return;
+    scrubbing = false;
+    ovBand.classList.remove('dragging');
+    try {
+      ovBand.releasePointerCapture?.(event.pointerId);
+    } catch {
+      /* was never captured */
+    }
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', endScrub);
+    window.removeEventListener('pointercancel', endScrub);
+  };
+  ovBand.addEventListener('pointerdown', (event) => {
+    if (event.target.closest('.tl-marker')) return; // marks/badges own their press
+    event.preventDefault(); // no text-selection / focus quirks mid-drag
+    scrubbing = true;
+    ovBand.classList.add('dragging');
+    seekFromEvent(event); // seek where pressed, before any capture call
+    try {
+      ovBand.setPointerCapture?.(event.pointerId);
+    } catch {
+      /* capture optional — window listeners carry the drag regardless */
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', endScrub);
+    window.addEventListener('pointercancel', endScrub);
   });
   ovBand.addEventListener('mousemove', (event) => {
     const p = pctFromEvent(ovBand, event);

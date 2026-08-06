@@ -279,70 +279,10 @@
 }
 /* Custom scrubber (DESIGN §6.5): graphite fill on a gray rail, graphite knob with
    a white ring. Graphite + white only, no hue. */
-.scrub {
-  position: relative;
-  flex: 1;
-  min-width: 120px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  touch-action: none;
-}
-.scrub-rail {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 4px;
-  border-radius: var(--r-pill);
-  background: var(--line-2);
-}
-.scrub-fill {
-  position: absolute;
-  left: 0;
-  width: 0;
-  height: 4px;
-  border-radius: var(--r-pill);
-  background: var(--ink);
-}
-.scrub-knob {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--ink);
-  box-shadow:
-    0 0 0 2px var(--panel),
-    var(--shadow-sm);
-  transform: translate(-50%, -50%);
-  /* Micro scale (§4): the knob and its ring grow on a 140ms transition. */
-  transition:
-    width 0.14s var(--ease),
-    height 0.14s var(--ease),
-    box-shadow 0.14s var(--ease);
-}
-.scrub:hover .scrub-knob,
-.scrub.dragging .scrub-knob {
-  width: 14px;
-  height: 14px;
-}
-/* Playing state: a second white/graphite ring blooms around the knob. No hue. */
-.scrub.playing .scrub-knob {
-  box-shadow:
-    0 0 0 3px var(--panel),
-    0 0 0 4px var(--ink-dim),
-    var(--shadow-sm);
-}
-/* Replace the global focus rectangle with a ring on the knob itself (§7). */
-.scrub:focus-visible {
-  outline: none;
-}
-.scrub:focus-visible .scrub-knob {
-  box-shadow:
-    0 0 0 2px var(--panel),
-    0 0 0 4px var(--ink);
+/* The standalone scrubber was removed (FIX 1): the timeline overview band is the
+   single time-nav surface. Speed sits at the right of the transport row. */
+.controls .speed-seg {
+  margin-left: auto;
 }
 .ctl-time {
   font-family: var(--font-m);
@@ -465,6 +405,10 @@
     transparent 46% 54%,
     var(--them-soft) 54% 100%
   );
+}
+/* While dragging the overview scrubber, show the grab cursor (FIX 1). */
+.tl.dragging {
+  cursor: grabbing;
 }
 .tl-track {
   position: absolute;

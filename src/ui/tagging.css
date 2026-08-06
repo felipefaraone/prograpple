@@ -28,87 +28,51 @@
 }
 
 /* --- side toggle ---------------------------------------------------------- */
-.side-toggle {
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--line-2);
-  border-radius: var(--r);
-  background: var(--panel-2);
-  /* Fixed toggle width so both buttons stay equal regardless of name length. */
+/* Side control (FIX 2): the shared segmented control, sized for two EQUAL segments
+   (no "All"). The active side fills SOLID via the sliding indicator — athlete --us
+   blue, opponent --them red, both with white text — symmetric weight; the inactive
+   segment is a quiet, legible ghost. The active colour is driven by the root's
+   data-active-side (the indicator sits before the buttons, so it cannot be selected
+   from the .on button in CSS). */
+.side-seg {
   width: 300px;
   max-width: 100%;
 }
-.side-btn {
-  display: flex;
-  flex: 1 1 0; /* equal width */
-  min-width: 0; /* allow the name to truncate */
+.side-seg .seg-btn {
+  min-width: 0; /* two equal halves regardless of name length */
+  gap: var(--space-2);
+}
+.side-seg[data-active-side='athlete'] .seg-indicator {
+  background: var(--us);
+}
+.side-seg[data-active-side='opponent'] .seg-indicator {
+  background: var(--them);
+}
+.side-seg .seg-btn.on,
+.side-seg .seg-btn.on:hover {
+  color: var(--panel);
+}
+.side-seg-lbl {
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--text-faint);
-  font-weight: 600;
-  font-size: var(--text-sm);
-  transition:
-    background 0.14s var(--ease),
-    color 0.14s;
-}
-.side-btn .side-name {
-  flex: 1;
   min-width: 0;
+}
+.side-seg-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-align: left;
 }
-.side-btn .side-dot {
-  flex: none;
-}
-/* Side glyph is an 8px ROUNDED SQUARE (DESIGN §5), echoing the logo's paired
-   squares. Dots are reserved for category, which no longer exists outside the
-   roll-shape strip. */
-.side-btn .side-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 3px;
-  background: var(--line-2);
-}
-.side-btn.athlete .side-dot {
-  background: var(--us);
-}
-.side-btn.opponent .side-dot {
-  background: var(--them);
-}
-/* Active side = a filled button showing whose tags you are dropping. Your athlete's
-   side fills confident blue with white text; the opponent's side uses a red TINT (not
-   a solid red button) so the "them" state reads clearly without shouting. The shadow
-   lifts the active tile off the track (§6.4) so even the light tint reads as filled. */
-.side-btn.on {
-  box-shadow: var(--shadow-sm);
-}
-.side-btn.athlete.on {
-  background: var(--us);
-  color: var(--panel);
-}
-.side-btn.athlete.on .side-dot {
-  background: var(--panel);
-}
-.side-btn.opponent.on {
-  background: var(--them-soft);
-  color: var(--them);
-}
-.side-btn.opponent.on .side-dot {
-  background: var(--them);
-}
-.side-btn .side-count {
+.side-count {
   flex: none; /* count always visible, never truncated */
   font-family: var(--font-m);
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
   opacity: 0.75;
+}
+.side-seg .seg-btn.on .side-count {
+  opacity: 1;
+  color: var(--panel);
 }
 
 /* Tagging controls unavailable until the player has a loaded source (item 10). */
@@ -124,11 +88,13 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+/* Compact quick-action chips (FIX 3): a dense row, not big buttons — tighter
+   padding/gap on the 4px grid (§3), same pill look. */
 .quick-chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  gap: 6px;
+  padding: var(--space-1) var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--r-pill);
   background: var(--panel);
@@ -148,6 +114,14 @@
 }
 .quick-chip:active {
   transform: scale(0.93);
+}
+/* "All tags (T)" sits in the same dense row — shrink the shared .btn to the chip's
+   compact height and pill shape so the row reads as one set (FIX 3). */
+.quick-row .all-tags {
+  height: auto;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--r-pill);
+  font-size: var(--text-sm);
 }
 /* Quick-tag chips are text-only in v2.0 (§1.4/§6.3) — the label is the info; no dot. */
 

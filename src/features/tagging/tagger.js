@@ -4,6 +4,7 @@
 // through the injected player contract (getPlayer()).
 
 import { el, mount, clear, isTypingTarget } from '../../ui/dom.js';
+import { createSegmented } from '../../ui/segmented.js';
 import { createTimeline } from '../timeline/timeline.js';
 import { createTagList } from './tag-list.js';
 import { createTagStore } from './store.js';
@@ -102,40 +103,42 @@ export function mountTagger({
     outbox.enqueueDelete(tag.id);
   }
 
-  // --- side toggle (names + live counts, prototype active state) ------------
+  // --- side toggle: an equal-width sliding segmented control (FIX 2) ---------
+  // Two segments only (no "All"). The active segment fills its side colour SOLID —
+  // athlete blue, opponent red — with white text, symmetric weight; the inactive
+  // segment is a quiet ghost. Reuses the shared segmented component; the active
+  // side's colour is applied to the sliding indicator via data-active-side. State +
+  // keyboard (Tab) are unchanged — this is styling + layout only.
   const SIDE_NAME = {
     athlete: athleteName || 'Athlete',
     opponent: opponentName || 'Opponent',
   };
-  const sideButtons = {};
-  const countEls = {};
-  const sideToggle = el('div', {
-    class: 'side-toggle',
-    role: 'group',
-    'aria-label': 'Tag side',
-  });
-  for (const value of ['athlete', 'opponent']) {
-    const countEl = el('span', { class: 'side-count', text: '0' });
-    countEls[value] = countEl;
-    const btn = el(
-      'button',
-      {
-        class: `side-btn ${value}`,
-        type: 'button',
-        onclick: () => setSide(value),
-      },
-      el('span', { class: 'side-dot' }),
-      el('span', { class: 'side-name', text: SIDE_NAME[value] }),
-      countEl
+  const countEls = {
+    athlete: el('span', { class: 'side-count', text: '0' }),
+    opponent: el('span', { class: 'side-count', text: '0' }),
+  };
+  const sideNode = (value) =>
+    el(
+      'span',
+      { class: 'side-seg-lbl' },
+      el('span', { class: 'side-seg-name', text: SIDE_NAME[value] }),
+      countEls[value]
     );
-    sideButtons[value] = btn;
-    sideToggle.append(btn);
-  }
+  const sideSeg = createSegmented({
+    ariaLabel: 'Tag side',
+    value: side,
+    options: [
+      { value: 'athlete', node: sideNode('athlete') },
+      { value: 'opponent', node: sideNode('opponent') },
+    ],
+    onChange: (value) => setSide(value),
+  });
+  sideSeg.root.classList.add('side-seg');
+  sideSeg.root.dataset.activeSide = side;
   function setSide(value) {
     side = value;
-    for (const [v, btn] of Object.entries(sideButtons)) {
-      btn.classList.toggle('on', v === side);
-    }
+    sideSeg.setValue(value); // reflect programmatic switches (Tab); no-op if same
+    sideSeg.root.dataset.activeSide = value; // drives the indicator's side colour
   }
   function paintCounts() {
     const counts = { athlete: 0, opponent: 0 };
@@ -237,7 +240,7 @@ export function mountTagger({
     el(
       'div',
       { class: 'tag-bar-top' },
-      sideToggle,
+      sideSeg.root,
       el('span', { class: 'spacer' }),
       unsaved
     ),

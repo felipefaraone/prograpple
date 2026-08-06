@@ -65,6 +65,15 @@ async function renderApp(session) {
     shell.setCollapsed(collapsed);
   };
 
+  // The single navigate-to-Videos action, reused by the Videos nav item and by the
+  // logo (FIX 6) — one path, no new routing.
+  const goVideos = () =>
+    renderVideoRoom(shell.content, {
+      client: supabase,
+      orgId,
+      setSidebar: autoSidebar,
+    });
+
   // Athletes first — it is the central object of the data model (nav order + default).
   shell = renderShell({
     email: session.user.email,
@@ -73,6 +82,12 @@ async function renderApp(session) {
       userOverrode = true;
       collapsed = !collapsed;
       shell.setCollapsed(collapsed);
+    },
+    // Clicking the logo goes home = the Videos list (same destination as the Videos
+    // nav), highlighting that nav item.
+    onLogo: () => {
+      shell.setActive('videos');
+      goVideos();
     },
     nav: [
       {
@@ -87,13 +102,8 @@ async function renderApp(session) {
       {
         id: 'videos',
         label: 'Videos',
-        iconName: 'film',
-        onSelect: () =>
-          renderVideoRoom(shell.content, {
-            client: supabase,
-            orgId,
-            setSidebar: autoSidebar,
-          }),
+        iconName: 'video',
+        onSelect: goVideos,
       },
     ],
   });

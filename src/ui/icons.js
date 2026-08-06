@@ -18,6 +18,14 @@ const PATHS = {
   pause:
     '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
   film: '<rect x="2" y="3" width="20" height="18" rx="2"/><line x1="7" y1="3" x2="7" y2="21"/><line x1="17" y1="3" x2="17" y2="21"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/>',
+  // Videos nav: a play triangle inside a rounded rectangle — a clear "video" read,
+  // a line icon like the others (§ icons convention).
+  video:
+    '<rect x="3" y="5" width="18" height="14" rx="3"/><polygon points="10 9 16 12 10 15 10 9"/>',
+  // Sidebar collapse: the panel-left glyph (rounded rect + a divided left column),
+  // the toggle pattern used by Linear / VS Code / Notion.
+  'panel-left':
+    '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/>',
   users:
     '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   'chevron-left': '<polyline points="15 18 9 12 15 6"/>',

@@ -17,13 +17,21 @@ function deriveName(email) {
 
 // nav: [{ id, label, iconName, onSelect }].
 // Returns { root, content, setActive, setCollapsed }.
-export function renderShell({ email, onSignOut, nav = [], onToggle }) {
+export function renderShell({ email, onSignOut, nav = [], onToggle, onLogo }) {
   const content = el('main', { class: 'main' });
 
-  // Wordmark: logo mark + "ProGrapple". Collapsed shows the mark only.
+  // Wordmark: logo mark + "ProGrapple". Collapsed shows the mark only. It is a real
+  // control (button semantics, focusable, keyboard-activatable) that goes home —
+  // reusing the caller's navigate-to-list action; no new routing (FIX 6).
   const wordmark = el(
-    'div',
-    { class: 'sb-wordmark' },
+    'button',
+    {
+      class: 'sb-wordmark',
+      type: 'button',
+      'aria-label': 'ProGrapple — go to Videos',
+      title: 'Go to Videos',
+      onclick: () => onLogo?.(),
+    },
     el('span', { class: 'sb-mark' }, logo({ size: 22 })),
     el('span', { class: 'sb-word', text: 'ProGrapple' })
   );
@@ -37,7 +45,7 @@ export function renderShell({ email, onSignOut, nav = [], onToggle }) {
       'aria-expanded': 'true',
       onclick: onToggle,
     },
-    icon('chevron-left')
+    icon('panel-left')
   );
 
   // Nav under one uppercase group label. "Workspace" = the surfaces where the
@@ -161,7 +169,9 @@ export function renderShell({ email, onSignOut, nav = [], onToggle }) {
 
   function setCollapsed(collapsed) {
     sidebar.classList.toggle('collapsed', collapsed);
-    toggle.replaceChildren(icon(collapsed ? 'chevron-right' : 'chevron-left'));
+    // Panel-toggle glyph stays constant in both states (like VS Code / Linear); the
+    // aria-label carries the direction. Icon only — behaviour unchanged.
+    toggle.replaceChildren(icon('panel-left'));
     toggle.setAttribute(
       'aria-label',
       collapsed ? 'Expand sidebar' : 'Collapse sidebar'
